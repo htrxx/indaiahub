@@ -50,10 +50,10 @@ export function LiveRates() {
           fetch(`https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='CNY'&@dataInicial='${fmt(past)}'&@dataFinalCotacao='${fmt(today)}'&$orderby=dataHoraCotacao%20desc&$top=8&$format=json&$select=cotacaoVenda`).then(r => r.json()),
         ])
 
-        function processRows(data: { value: { cotacaoVenda: number }[] }) {
-          const rows = data.value || []
-          if (!rows.length) return null
-          const last = rows[0].cotacaoVenda
+        const processRows = (data: { value: { cotacaoVenda: number }[] }) => {
+       const rows = data.value || []
+        if (!rows.length) return null
+        const last = rows[0].cotacaoVenda
           const prev = rows[1]?.cotacaoVenda
           const chg = prev ? ((last - prev) / prev) * 100 : 0
           const bars = rows.slice(0, 7).reverse().map(r => Math.round((r.cotacaoVenda / last) * 70))
