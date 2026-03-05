@@ -14,20 +14,14 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 70% 50%, rgba(26,68,128,0.45) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 85% 20%, rgba(21,101,192,0.25) 0%, transparent 50%),
-    radial-gradient(ellipse 30% 50% at 90% 80%, rgba(66,165,245,0.08) 0%, transparent 50%);
+  
 }
 
 .grid {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image:
-    linear-gradient(rgba(66,165,245,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(66,165,245,0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
+  
 }
 
 .lines { position: absolute; right: 0; top: 0; bottom: 0; width: 50%; z-index: 0; overflow: hidden; }
@@ -36,7 +30,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(66,165,245,0.12), transparent);
+ 
 }
 
 /* ── Content ── */

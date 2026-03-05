@@ -1,15 +1,13 @@
 .topbar {
-  background: var(--brand-deep);
+  background: #f8fafc;
   height: var(--topbar-h);
   display: flex;
   align-items: center;
-  padding: 0 48px;
-  gap: 24px;
+  padding: 0 var(--page-px, 48px);
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   z-index: 300;
+  border-bottom: 1px solid #e8edf3;
 }
 
 .left {
@@ -22,9 +20,7 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  gap: 12px;
 }
 
 .item {
@@ -32,44 +28,41 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: #64748B;
   font-weight: 500;
   white-space: nowrap;
 }
-
 .item a {
-  color: rgba(255, 255, 255, 0.45);
+  color: #64748B;
   text-decoration: none;
   transition: color 0.15s;
 }
-.item a:hover { color: white; }
+.item a:hover { color: #1565C0; }
 
 .sep {
   width: 1px;
   height: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e2e8f0;
   flex-shrink: 0;
 }
 
-.rateLabel {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.35);
-  letter-spacing: 0.08em;
-}
-
-.rateVal {
-  color: white;
-  font-weight: 500;
+.socialLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+  white-space: nowrap;
 }
-
-.rateChg {
-  font-size: 10px;
-  font-weight: 700;
-}
+.socialLink:hover { color: #1565C0; }
 
 @media (max-width: 768px) {
   .topbar { padding: 0 16px; }
   .left .item:not(:first-child) { display: none; }
   .left .sep { display: none; }
+  .socialLink span { display: none; }
 }

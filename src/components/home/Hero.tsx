@@ -1,9 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import styles from './Hero.module.css'
-import { HeroHUD } from './HeroHUD'
+
+const FULL_TEXT = 'A extensão do seu departamento de COMEX'
+
+function useTypewriter(text: string, speed = 30) {
+  const [displayed, setDisplayed] = useState('')
+  const [done, setDone] = useState(false)
+  const idx = useRef(0)
+
+  useEffect(() => {
+    idx.current = 0
+    setDisplayed('')
+    setDone(false)
+    const id = setInterval(() => {
+      idx.current += 1
+      setDisplayed(text.slice(0, idx.current))
+      if (idx.current >= text.length) { setDone(true); clearInterval(id) }
+    }, speed)
+    return () => clearInterval(id)
+  }, [text, speed])
+
+  return { displayed, done }
+}
 
 const PHRASES = [
   <>Despacho aduaneiro e logística para <strong>importação e exportação</strong> — do DI ao desembaraço com transparência total.</>,
@@ -16,7 +37,24 @@ const PHRASES = [
 interface RateData { usd: string; eur: string; chg: string; isUp: boolean; time: string }
 
 export function Hero() {
+  const { displayed, done } = useTypewriter(FULL_TEXT)
   const [phraseIdx, setPhraseIdx] = useState(0)
+  const [scrolled, setScrolled] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [videoReady, setVideoReady] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrolled(y > 50)
+      const video = videoRef.current
+      if (!video || !video.duration) return
+      video.currentTime = Math.min(y / 1100, 1) * video.duration
+    }
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const [rate, setRate] = useState<RateData>({ usd: 'R$ —', eur: 'R$ —', chg: '—', isUp: true, time: '—' })
 
   useEffect(() => {
@@ -31,12 +69,10 @@ export function Hero() {
         const today = new Date()
         const past = new Date(today); past.setDate(past.getDate() - 7)
         const fmt = (d: Date) => `${pad(d.getMonth()+1)}-${pad(d.getDate())}-${d.getFullYear()}`
-
         const [usdRes, eurRes] = await Promise.allSettled([
           fetch(`https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='${fmt(past)}'&@dataFinalCotacao='${fmt(today)}'&$orderby=dataHoraCotacao%20desc&$top=2&$format=json&$select=cotacaoVenda,dataHoraCotacao`).then(r => r.json()),
           fetch(`https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='EUR'&@dataInicial='${fmt(past)}'&@dataFinalCotacao='${fmt(today)}'&$orderby=dataHoraCotacao%20desc&$top=1&$format=json&$select=cotacaoVenda`).then(r => r.json()),
         ])
-
         let usd = 5.87, eur = 6.35, chg = 0, time = ''
         if (usdRes.status === 'fulfilled') {
           const rows = usdRes.value.value || []
@@ -47,7 +83,6 @@ export function Hero() {
           const rows = eurRes.value.value || []
           if (rows.length) eur = rows[0].cotacaoVenda
         }
-
         setRate({
           usd: `R$ ${usd.toFixed(4).replace('.', ',')}`,
           eur: `R$ ${eur.toFixed(4).replace('.', ',')}`,
@@ -60,30 +95,129 @@ export function Hero() {
     fetch_()
   }, [])
 
+  /* ── Typewriter rendering ── */
+  const line1     = 'A extensão do seu'
+  const comexStart = FULL_TEXT.indexOf('COMEX')
+
+  function renderTitle() {
+    /* Sempre quebra linha normalmente — remove nowrap que causava overflow */
+    if (displayed.length <= line1.length) {
+      return (
+        <>
+          {displayed}
+          <span style={{ animation: 'blink 0.75s step-end infinite', marginLeft: 6 }}>_</span>
+        </>
+      )
+    }
+    const beforeComex  = 'departamento de '
+    const comexTyped   = displayed.length > comexStart ? displayed.slice(comexStart) : ''
+    const afterLine1   = displayed.slice(line1.length + 1)
+    return (
+      <>
+        {line1}{' '}
+        {displayed.length <= comexStart ? afterLine1 : beforeComex}
+        {displayed.length > comexStart && (
+          <span className={styles.hl}>{comexTyped}</span>
+        )}
+        <span style={{ animation: 'blink 0.75s step-end infinite', marginLeft: 8 }}>_</span>
+      </>
+    )
+  }
+
   return (
     <section className={styles.hero}>
-      <div className={styles.bg} />
+      <style>{`
+        @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes arrowPulse { from{opacity:0.8} to{opacity:0.15} }
+
+        /* Hero content container — padding lateral igual ao resto da página */
+        .hero-inner {
+          position: relative;
+          z-index: 2;
+          padding-left:  var(--page-px);
+          padding-right: var(--page-px);
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* Título: NUNCA usa white-space:nowrap — quebra livremente */
+        .hero-title {
+          font-size: clamp(28px, 4.5vw, 68px);
+          font-weight: 800;
+          line-height: 1.1;
+          letter-spacing: -0.03em;
+          white-space: normal;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          max-width: 100%;
+        }
+
+        .hero-sub {
+          font-size: clamp(14px, 1.4vw, 17px);
+          max-width: min(560px, 100%);
+          margin-top: 20px;
+        }
+
+        .hero-ctas {
+          display: flex;
+          flex-direction: row;
+          gap: 14px;
+          flex-wrap: wrap;
+          margin-top: 32px;
+        }
+
+        .hero-badge {
+          font-size: clamp(10px, 1vw, 12px);
+          margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+          .hero-title { font-size: clamp(26px, 7vw, 38px); }
+          .hero-ctas  { flex-direction: column; }
+          .hero-ctas a, .hero-ctas button { width: 100%; justify-content: center; }
+        }
+      `}</style>
+
+      {/* Video background */}
+      <video
+        ref={videoRef}
+        src="/hero-bg.mp4"
+        muted playsInline preload="metadata"
+        onCanPlay={() => setVideoReady(true)}
+        style={{
+          transform: 'scaleX(-1)',
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          objectFit: 'cover', zIndex: 0,
+          opacity: videoReady ? 0.45 : 0,
+          transition: 'opacity 1.4s ease',
+        }}
+      />
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: 'linear-gradient(135deg, rgba(10,22,40,0.80) 0%, rgba(10,22,40,0.50) 100%)',
+      }} />
       <div className={styles.grid} />
       <div className={styles.lines}>
         {[20, 40, 60, 80].map(t => <div key={t} className={styles.line} style={{ top: `${t}%` }} />)}
       </div>
 
-      <div className={styles.content}>
-        <div className={styles.badge}>
+      {/* ── Content: usa hero-inner para padding consistente ── */}
+      <div className="hero-inner">
+        <div className={`hero-badge ${styles.badge}`}>
           <span className={styles.badgePip} />
           Despachante Aduaneiro — Santos, SP · 58 anos
         </div>
 
-        <h1 className={styles.title}>
-          A extensão do seu<br />
-          departamento de <span className={styles.hl}>COMEX</span>
+        <h1 className={`hero-title ${styles.title}`}>
+          {renderTitle()}
         </h1>
 
         <div className={styles.subWrap}>
-          <p className={styles.sub}>{PHRASES[phraseIdx]}</p>
+          <p className={`hero-sub ${styles.sub}`}>{PHRASES[phraseIdx]}</p>
         </div>
 
-        <div className={styles.ctas}>
+        <div className={`hero-ctas ${styles.ctas}`}>
           <Link href="/contato" className={styles.btnPrimary}>
             Solicitar Cotação
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -94,39 +228,22 @@ export function Hero() {
             Acessar Portal
           </a>
         </div>
-
-        {/* Live rates strip */}
-        <div className={styles.livePill}>
-          <div>
-            <div className={styles.liveLabel}>USD / BRL</div>
-            <div className={styles.liveVal}>{rate.usd}</div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel}>EUR / BRL</div>
-            <div className={styles.liveVal}>{rate.eur}</div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel}>Variação USD</div>
-            <div className={styles.liveChg} style={{ color: rate.isUp ? 'var(--green)' : 'var(--red)' }}>
-              {rate.chg}
-            </div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel} style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <span className={styles.liveDot} />
-              Ao vivo
-            </div>
-            <div className={styles.liveTime}>{rate.time}</div>
-          </div>
-        </div>
       </div>
 
-      {/* New CTA HUD */}
-      <div className={styles.hudWrapper}>
-        <HeroHUD usd={rate.usd} />
+      {/* Scroll arrow */}
+      <div style={{
+        position: 'absolute', bottom: 32, left: '50%',
+        transform: 'translateX(-50%)', pointerEvents: 'none',
+        opacity: scrolled ? 0 : 1, transition: 'opacity 0.4s ease',
+      }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          animation: 'arrowPulse 0.6s ease-in-out infinite alternate',
+        }}>
+          <svg width="50" height="50" viewBox="0 0 20 20" fill="none">
+            <path d="M10 3v14M4 11l6 6 6-6" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
       </div>
     </section>
   )

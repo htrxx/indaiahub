@@ -45,6 +45,7 @@
   font-size: 15px;
   text-decoration: none;
   transition: all 0.2s;
+  color: white;
 }
 .socialLink:hover {
   background: var(--brand-core);

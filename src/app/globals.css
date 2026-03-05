@@ -1,13 +1,11 @@
 /* ═══════════════════════════════════════════════════
    INDAIA PORTAL V9 — Global Styles
-   Design tokens, resets, typography, utilities
 ═══════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
 /* ── Design Tokens ── */
 :root {
-  /* Brand palette */
   --brand-deep:   #0A1628;
   --brand-navy:   #0D2244;
   --brand-core:   #1565C0;
@@ -16,7 +14,6 @@
   --brand-pale:   #BBDEFB;
   --brand-frost:  #E3F2FD;
 
-  /* Light mode (default) */
   --bg:       #FFFFFF;
   --bg-alt:   #F7F9FC;
   --bg-card:  #FFFFFF;
@@ -39,20 +36,23 @@
   --yellow: #F59E0B;
   --red:    #EF4444;
 
-  /* Spacing & shape */
   --r:   12px;
   --rl:  20px;
   --sh:  0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.08);
   --shd: 0 8px 32px rgba(15,23,42,0.10);
   --shx: 0 24px 64px rgba(15,23,42,0.14);
 
-  /* Nav heights */
   --topbar-h: 36px;
-  --nav-h:    68px;
-  --total-h:  104px; /* topbar + nav */
+  --nav-h:    88px;
+  --total-h:  124px;
+
+  /* ── Variável central de padding horizontal ──
+     Esta é a ÚNICA fonte de verdade para margens laterais.
+     Sobe de 16px (mobile) até 48px (tablet) e usa o espaço
+     restante acima de 1256px para centralizar o wrap. */
+  --page-px: clamp(16px, 4vw, 48px);
 }
 
-/* ── Dark Mode ── */
 [data-theme="dark"] {
   --bg:       #0F172A;
   --bg-alt:   #1E293B;
@@ -63,47 +63,37 @@
   --text-2:   #CBD5E1;
   --text-3:   #64748B;
   --input-bg: #263348;
-
-  --white:  #0F172A;
-  --off:    #1E293B;
-  --gray-1: #64748B;
-  --gray-2: #475569;
-  --gray-3: #334155;
-  --ink:    #F1F5F9;
-  --ink2:   #CBD5E1;
+  --white:    #0F172A;
+  --off:      #1E293B;
+  --gray-1:   #64748B;
+  --gray-2:   #475569;
+  --gray-3:   #334155;
+  --ink:      #F1F5F9;
+  --ink2:     #CBD5E1;
   --brand-frost: #1A2E4A;
   --brand-pale:  #1E3A6E;
-
   --sh:  0 2px 8px rgba(0,0,0,0.3);
   --shd: 0 8px 32px rgba(0,0,0,0.4);
   --shx: 0 24px 64px rgba(0,0,0,0.5);
 }
 
 /* ── Reset ── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
-  overflow-x: hidden;
+  /* NUNCA usar overflow-x:hidden no body — esconde o problema sem resolver */
+  overflow-x: clip;
   transition: background 0.3s, color 0.3s;
 }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg-alt); }
 ::-webkit-scrollbar-thumb { background: var(--brand-core); border-radius: 2px; }
 
-/* ── Typography utilities ── */
+/* ── Typography ── */
 .mono { font-family: 'DM Mono', monospace; }
 
 .sec-eye {
@@ -123,153 +113,120 @@ body {
   width: 18px;
   height: 1.5px;
   background: var(--brand-core);
+  flex-shrink: 0;
 }
 
 .sec-h {
-  font-size: clamp(30px, 3.2vw, 48px);
+  font-size: clamp(22px, 2.8vw, 48px);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.03em;
   color: var(--ink);
 }
 .sec-h span { color: var(--brand-core); }
 
 .sec-p {
-  font-size: 15.5px;
+  font-size: clamp(13.5px, 1.3vw, 15.5px);
   color: var(--gray-1);
   line-height: 1.8;
   margin-top: 14px;
   max-width: 520px;
 }
 
-/* ── Layout ── */
-.sec { padding: 88px 48px; }
-.wrap { max-width: 1160px; margin: 0 auto; }
+/* ── Layout: abordagem definitiva ──
+   .sec  → padding lateral = --page-px em todos os tamanhos
+   .wrap → max-width de 1160px, centralizado, SEM padding próprio
+           (o pai .sec já garante o respiro)
+   
+   Assim em qualquer viewport entre 360px e 1600px+
+   o conteúdo NUNCA toca a borda. */
+.sec {
+  padding-top:    clamp(52px, 7vw, 88px);
+  padding-bottom: clamp(52px, 7vw, 88px);
+  padding-left:   var(--page-px);
+  padding-right:  var(--page-px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wrap {
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  /* sem padding aqui — o .sec já tem */
+}
 
 /* ── Buttons ── */
 .btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
-  border-radius: 10px;
-  background: var(--brand-core);
-  border: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 32px; border-radius: 10px;
+  background: var(--brand-core); border: none;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: white;
-  cursor: pointer;
-  text-decoration: none;
+  font-size: 15px; font-weight: 700; color: white;
+  cursor: pointer; text-decoration: none;
   box-shadow: 0 6px 28px rgba(21,101,192,0.45);
   transition: all 0.25s;
 }
 .btn-primary:hover {
-  background: var(--brand-bright);
-  transform: translateY(-2px);
+  background: var(--brand-bright); transform: translateY(-2px);
   box-shadow: 0 10px 36px rgba(21,101,192,0.55);
 }
 
 .btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 28px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: transparent;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 28px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15); background: transparent;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.7);
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
+  font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7);
+  cursor: pointer; text-decoration: none; transition: all 0.2s;
 }
 .btn-ghost:hover {
-  border-color: rgba(255,255,255,0.35);
-  color: white;
+  border-color: rgba(255,255,255,0.35); color: white;
   background: rgba(255,255,255,0.04);
 }
 
-/* ── Form elements ── */
-.fg {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+/* ── Forms ── */
+.fg { display: flex; flex-direction: column; gap: 6px; }
 .fg label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--gray-1);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-1);
 }
-.fg input,
-.fg select,
-.fg textarea {
-  border: 1.5px solid var(--gray-3);
-  border-radius: 10px;
+.fg input, .fg select, .fg textarea {
+  border: 1.5px solid var(--border); border-radius: 10px;
   padding: 11px 14px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--input-bg);
-  border-color: var(--border);
-  outline: none;
-  transition: border-color 0.2s;
-  width: 100%;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+  color: var(--text); background: var(--input-bg);
+  outline: none; transition: border-color 0.2s; width: 100%;
 }
-.fg input:focus,
-.fg select:focus,
-.fg textarea:focus {
+.fg input:focus, .fg select:focus, .fg textarea:focus {
   border-color: var(--brand-core);
   box-shadow: 0 0 0 3px rgba(21,101,192,0.08);
 }
 .fg textarea { resize: vertical; min-height: 100px; }
 
 /* ── Animations ── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeLeft {
-  from { opacity: 0; transform: translateX(30px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
+@keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:none } }
+@keyframes fadeLeft { from { opacity:0; transform:translateX(30px) } to { opacity:1; transform:none } }
+@keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0.3} }
 @keyframes ringPulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(66,165,245,0.2); }
-  50%       { box-shadow: 0 0 0 6px rgba(66,165,245,0.06); }
+  0%,100% { box-shadow: 0 0 0 3px rgba(66,165,245,0.2) }
+  50%     { box-shadow: 0 0 0 6px rgba(66,165,245,0.06) }
 }
-@keyframes rflash {
-  0%   { color: var(--brand-sky); }
-  100% { color: inherit; }
-}
-
+@keyframes rflash { 0%{color:var(--brand-sky)} 100%{color:inherit} }
 .rflash { animation: rflash 0.9s ease; }
 
-/* ── Badge utility ── */
-.badge-green  { background: rgba(16,185,129,0.12);  color: var(--green); }
+/* ── Badges ── */
+.badge-green  { background: rgba(16,185,129,0.12); color: var(--green); }
 .badge-yellow { background: rgba(245,158,11,0.12);  color: var(--yellow); }
 .badge-blue   { background: rgba(66,165,245,0.12);  color: var(--brand-sky); }
 .badge-red    { background: rgba(239,68,68,0.12);   color: var(--red); }
 
-/* ── Reveal animation ── */
-.rv {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.65s ease, transform 0.65s ease;
-}
-.rv.in {
-  opacity: 1;
-  transform: none;
-}
+/* ── Reveal ── */
+.rv { opacity:0; transform:translateY(24px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.rv.in { opacity:1; transform:none; }
 
-/* ── Dark mode overrides for sections ── */
+/* ── Section overrides ── */
 .sec-services, .sec-news { background: var(--bg); }
 .sec-tools, .sec-quote   { background: var(--bg-alt); }
 .sec-h { color: var(--text); }
@@ -277,6 +234,12 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .sec { padding: 64px 20px; }
-  .wrap { padding: 0 4px; }
+  .sec-p { max-width: 100%; }
+}
+@media (max-width: 480px) {
+  .sec-h { line-height: 1.2; }
+  .btn-primary, .btn-ghost {
+    width: 100%; justify-content: center;
+    padding: 14px 20px; font-size: 14px;
+  }
 }
