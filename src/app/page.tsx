@@ -1,6 +1,6 @@
 import { Hero } from '@/components/home/Hero'
+import { ServicesExplorer } from '@/components/home/ServicesExplorer'
 import { StatsBand } from '@/components/home/StatsBand'
-import { Services } from '@/components/home/Services'
 import { NewsSection } from '@/components/home/NewsSection'
 import { LiveRates } from '@/components/cotacao/LiveRates'
 import { QuoteForm } from '@/components/home/QuoteForm'
@@ -10,8 +10,10 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      
       <StatsBand />
-      <Services />
+      <ServicesExplorer />
+      
       <NewsSection />
       <LiveRates />
       <ClientLogos />

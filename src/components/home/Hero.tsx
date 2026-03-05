@@ -1,9 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import styles from './Hero.module.css'
-import { HeroHUD } from './HeroHUD'
+
+const FULL_TEXT = 'A extensão do seu departamento de COMEX'
+
+function useTypewriter(text: string, speed = 30) {
+  const [displayed, setDisplayed] = useState('')
+  const [done, setDone] = useState(false)
+  const idx = useRef(0)
+
+  useEffect(() => {
+    idx.current = 0
+    setDisplayed('')
+    setDone(false)
+    const id = setInterval(() => {
+      idx.current += 1
+      setDisplayed(text.slice(0, idx.current))
+      if (idx.current >= text.length) { setDone(true); clearInterval(id) }
+    }, speed)
+    return () => clearInterval(id)
+  }, [text, speed])
+
+  return { displayed, done }
+}
+
 
 const PHRASES = [
   <>Despacho aduaneiro e logística para <strong>importação e exportação</strong> — do DI ao desembaraço com transparência total.</>,
@@ -16,7 +38,26 @@ const PHRASES = [
 interface RateData { usd: string; eur: string; chg: string; isUp: boolean; time: string }
 
 export function Hero() {
+  const { displayed, done } = useTypewriter(FULL_TEXT)
   const [phraseIdx, setPhraseIdx] = useState(0)
+  const [scrolled, setScrolled] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [videoReady, setVideoReady] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrolled(y > 50)
+
+      const video = videoRef.current
+      if (!video || !video.duration) return
+      
+      const progress = Math.min(y / 1100, 1)
+      video.currentTime = progress * video.duration
+    }
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const [rate, setRate] = useState<RateData>({ usd: 'R$ —', eur: 'R$ —', chg: '—', isUp: true, time: '—' })
 
   useEffect(() => {
@@ -62,7 +103,34 @@ export function Hero() {
 
   return (
     <section className={styles.hero}>
-      <div className={styles.bg} />
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} } @keyframes arrowPulse { from { opacity: 0.8; } to { opacity: 0.15; } }`}</style>
+      {/* Video background */}
+      <video
+        ref={videoRef}
+        src="/hero-bg.mp4"
+        muted
+        playsInline
+        preload="metadata"
+        onCanPlay={() => setVideoReady(true)}
+        style={{
+          transform: 'scaleX(-1)',
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          opacity: videoReady ? 0.45 : 0,
+          transition: 'opacity 1.4s ease',
+        }}
+      />
+      {/* Overlay to keep text readable */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        background: 'linear-gradient(135deg, rgba(10,22,40,0.75) 0%, rgba(10,22,40,0.45) 100%)',
+      }} />
       <div className={styles.grid} />
       <div className={styles.lines}>
         {[20, 40, 60, 80].map(t => <div key={t} className={styles.line} style={{ top: `${t}%` }} />)}
@@ -74,9 +142,38 @@ export function Hero() {
           Despachante Aduaneiro — Santos, SP · 58 anos
         </div>
 
-        <h1 className={styles.title}>
-          A extensão do seu<br />
-          departamento de <span className={styles.hl}>COMEX</span>
+        <h1 className={styles.title} style={{ whiteSpace: 'nowrap' }}>
+          {(() => {
+            const line1 = 'A extensão do seu'
+            const line2 = 'departamento de COMEX'
+            const comexStart = FULL_TEXT.indexOf('COMEX')
+
+            if (displayed.length <= line1.length) {
+              return (
+                <>
+                  {displayed}
+                 <span style={{ animation:'blink 0.75s step-end infinite', marginLeft: 6}}>_</span>
+                </>
+              )
+            }
+
+            const afterLine1 = displayed.slice(line1.length + 1) // skip \n space
+            const beforeComex = 'departamento de '
+            const comexTyped = displayed.length > comexStart ? displayed.slice(comexStart) : ''
+
+            return (
+              <>
+               {line1}{' '}
+                {displayed.length <= comexStart
+                  ? afterLine1
+                  : beforeComex}
+                {displayed.length > comexStart && (
+                  <span className={styles.hl}>{comexTyped}</span>
+                )}
+                <span style={{ animation:'blink 0.75s step-end infinite', marginLeft: 8 }}>_</span>
+              </>
+            )
+          })()}
         </h1>
 
         <div className={styles.subWrap}>
@@ -94,39 +191,28 @@ export function Hero() {
             Acessar Portal
           </a>
         </div>
-
-        {/* Live rates strip */}
-        <div className={styles.livePill}>
-          <div>
-            <div className={styles.liveLabel}>USD / BRL</div>
-            <div className={styles.liveVal}>{rate.usd}</div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel}>EUR / BRL</div>
-            <div className={styles.liveVal}>{rate.eur}</div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel}>Variação USD</div>
-            <div className={styles.liveChg} style={{ color: rate.isUp ? 'var(--green)' : 'var(--red)' }}>
-              {rate.chg}
-            </div>
-          </div>
-          <div className={styles.liveSep} />
-          <div>
-            <div className={styles.liveLabel} style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <span className={styles.liveDot} />
-              Ao vivo
-            </div>
-            <div className={styles.liveTime}>{rate.time}</div>
-          </div>
-        </div>
       </div>
 
-      {/* New CTA HUD */}
-      <div className={styles.hudWrapper}>
-        <HeroHUD usd={rate.usd} />
+      {/* Scroll arrow */}
+      <div style={{
+        position: 'absolute',
+        bottom: 32,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        pointerEvents: 'none',
+        opacity: scrolled ? 0 : 1,
+        transition: 'opacity 0.4s ease',
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          animation: 'arrowPulse 0.6s ease-in-out infinite alternate',
+        }}>
+          <svg width="50" height="50" viewBox="0 0 20 20" fill="none">
+            <path d="M10 3v14M4 11l6 6 6-6" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
       </div>
     </section>
   )
