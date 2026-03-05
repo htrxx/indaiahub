@@ -9,9 +9,17 @@ import { ClientLogos } from '@/components/home/ClientLogos'
 export default function HomePage() {
   return (
     <>
+<<<<<<< HEAD
       <Hero />      
       <StatsBand />
       <ServicesExplorer />
+=======
+      <Hero />
+      
+      <StatsBand />
+      <ServicesExplorer />
+      
+>>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
       <NewsSection />
       <LiveRates />
       <ClientLogos />
