@@ -25,10 +25,6 @@ function useTypewriter(text: string, speed = 30) {
 
   return { displayed, done }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
 
 const PHRASES = [
   <>Despacho aduaneiro e logística para <strong>importação e exportação</strong> — do DI ao desembaraço com transparência total.</>,
@@ -51,26 +47,14 @@ export function Hero() {
     const onScroll = () => {
       const y = window.scrollY
       setScrolled(y > 50)
-<<<<<<< HEAD
       const video = videoRef.current
       if (!video || !video.duration) return
       video.currentTime = Math.min(y / 1100, 1) * video.duration
-=======
-
-      const video = videoRef.current
-      if (!video || !video.duration) return
-      
-      const progress = Math.min(y / 1100, 1)
-      video.currentTime = progress * video.duration
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
     }
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-<<<<<<< HEAD
 
-=======
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
   const [rate, setRate] = useState<RateData>({ usd: 'R$ —', eur: 'R$ —', chg: '—', isUp: true, time: '—' })
 
   useEffect(() => {
@@ -111,12 +95,10 @@ export function Hero() {
     fetch_()
   }, [])
 
-  /* ── Typewriter rendering ── */
-  const line1     = 'A extensão do seu'
+  const line1 = 'A extensão do seu'
   const comexStart = FULL_TEXT.indexOf('COMEX')
 
   function renderTitle() {
-    /* Sempre quebra linha normalmente — remove nowrap que causava overflow */
     if (displayed.length <= line1.length) {
       return (
         <>
@@ -125,9 +107,9 @@ export function Hero() {
         </>
       )
     }
-    const beforeComex  = 'departamento de '
-    const comexTyped   = displayed.length > comexStart ? displayed.slice(comexStart) : ''
-    const afterLine1   = displayed.slice(line1.length + 1)
+    const beforeComex = 'departamento de '
+    const comexTyped = displayed.length > comexStart ? displayed.slice(comexStart) : ''
+    const afterLine1 = displayed.slice(line1.length + 1)
     return (
       <>
         {line1}{' '}
@@ -142,12 +124,10 @@ export function Hero() {
 
   return (
     <section className={styles.hero}>
-<<<<<<< HEAD
       <style>{`
         @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes arrowPulse { from{opacity:0.8} to{opacity:0.15} }
 
-        /* Hero content container — padding lateral igual ao resto da página */
         .hero-inner {
           position: relative;
           z-index: 2;
@@ -157,7 +137,6 @@ export function Hero() {
           box-sizing: border-box;
         }
 
-        /* Título: NUNCA usa white-space:nowrap — quebra livremente */
         .hero-title {
           font-size: clamp(28px, 4.5vw, 68px);
           font-weight: 800;
@@ -195,14 +174,10 @@ export function Hero() {
         }
       `}</style>
 
-=======
-      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} } @keyframes arrowPulse { from { opacity: 0.8; } to { opacity: 0.15; } }`}</style>
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
       {/* Video background */}
       <video
         ref={videoRef}
         src="/hero-bg.mp4"
-<<<<<<< HEAD
         muted playsInline preload="metadata"
         onCanPlay={() => setVideoReady(true)}
         style={{
@@ -210,86 +185,31 @@ export function Hero() {
           position: 'absolute', inset: 0,
           width: '100%', height: '100%',
           objectFit: 'cover', zIndex: 0,
-=======
-        muted
-        playsInline
-        preload="metadata"
-        onCanPlay={() => setVideoReady(true)}
-        style={{
-          transform: 'scaleX(-1)',
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0,
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
           opacity: videoReady ? 0.45 : 0,
           transition: 'opacity 1.4s ease',
         }}
       />
-<<<<<<< HEAD
+
+      {/* Overlay */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
         background: 'linear-gradient(135deg, rgba(10,22,40,0.80) 0%, rgba(10,22,40,0.50) 100%)',
-=======
-      {/* Overlay to keep text readable */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 1,
-        background: 'linear-gradient(135deg, rgba(10,22,40,0.75) 0%, rgba(10,22,40,0.45) 100%)',
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
       }} />
+
       <div className={styles.grid} />
       <div className={styles.lines}>
         {[20, 40, 60, 80].map(t => <div key={t} className={styles.line} style={{ top: `${t}%` }} />)}
       </div>
 
-      {/* ── Content: usa hero-inner para padding consistente ── */}
+      {/* Content */}
       <div className="hero-inner">
         <div className={`hero-badge ${styles.badge}`}>
           <span className={styles.badgePip} />
           Despachante Aduaneiro — Santos, SP · 58 anos
         </div>
 
-<<<<<<< HEAD
         <h1 className={`hero-title ${styles.title}`}>
           {renderTitle()}
-=======
-        <h1 className={styles.title} style={{ whiteSpace: 'nowrap' }}>
-          {(() => {
-            const line1 = 'A extensão do seu'
-            const line2 = 'departamento de COMEX'
-            const comexStart = FULL_TEXT.indexOf('COMEX')
-
-            if (displayed.length <= line1.length) {
-              return (
-                <>
-                  {displayed}
-                 <span style={{ animation:'blink 0.75s step-end infinite', marginLeft: 6}}>_</span>
-                </>
-              )
-            }
-
-            const afterLine1 = displayed.slice(line1.length + 1) // skip \n space
-            const beforeComex = 'departamento de '
-            const comexTyped = displayed.length > comexStart ? displayed.slice(comexStart) : ''
-
-            return (
-              <>
-               {line1}{' '}
-                {displayed.length <= comexStart
-                  ? afterLine1
-                  : beforeComex}
-                {displayed.length > comexStart && (
-                  <span className={styles.hl}>{comexTyped}</span>
-                )}
-                <span style={{ animation:'blink 0.75s step-end infinite', marginLeft: 8 }}>_</span>
-              </>
-            )
-          })()}
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
         </h1>
 
         <div className={styles.subWrap}>
@@ -311,27 +231,12 @@ export function Hero() {
 
       {/* Scroll arrow */}
       <div style={{
-<<<<<<< HEAD
         position: 'absolute', bottom: 32, left: '50%',
         transform: 'translateX(-50%)', pointerEvents: 'none',
         opacity: scrolled ? 0 : 1, transition: 'opacity 0.4s ease',
       }}>
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-=======
-        position: 'absolute',
-        bottom: 32,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        pointerEvents: 'none',
-        opacity: scrolled ? 0 : 1,
-        transition: 'opacity 0.4s ease',
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
->>>>>>> 280a72adeeab75b137045bd2ef9b4fdaca4b6936
           animation: 'arrowPulse 0.6s ease-in-out infinite alternate',
         }}>
           <svg width="50" height="50" viewBox="0 0 20 20" fill="none">
