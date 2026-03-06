@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 interface NcmItem { codigo: string; descricao: string; tipo: string; ii?: number | null }
 
 const GLOBAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap');
-
   @keyframes ncm-spin { to { transform: rotate(360deg); } }
   @keyframes ncm-fadeSlideIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -93,22 +91,21 @@ const GLOBAL_STYLES = `
   }
 `
 
-import { useEffect } from 'react'
-
 function StyleInjector() {
   useEffect(() => {
+    const ID = 'ncm-global-styles'
+    // Evita duplicata em strict mode / hot reload
+    if (document.getElementById(ID)) return
     const el = document.createElement('style')
-    el.setAttribute('data-ncm-styles', '')
+    el.id = ID
     el.textContent = GLOBAL_STYLES
     document.head.appendChild(el)
-
-    return () => {
-      document.head.removeChild(el)
-    }
+    // Remove ao sair da página — impede vazamento para outras rotas
+    return () => { document.getElementById(ID)?.remove() }
   }, [])
-
   return null
 }
+
 function IIBadge({ ii }: { ii?: number | null }) {
   if (ii === null || ii === undefined)
     return <span className="ncm-badge" style={{ color: '#64748b', background: 'rgba(100,116,139,0.1)' }}>II: —</span>
@@ -221,6 +218,28 @@ export function NcmPage() {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') { if (debounceRef.current) clearTimeout(debounceRef.current); search(query) }
   }
+
+  // Carrega as fontes NCM apenas nesta página e reseta o body ao sair
+  useEffect(() => {
+    const prevBg = document.body.style.background
+    const prevColor = document.body.style.color
+
+    // Adiciona link das fontes se ainda não existe
+    const FONT_ID = 'ncm-fonts'
+    if (!document.getElementById(FONT_ID)) {
+      const link = document.createElement('link')
+      link.id = FONT_ID
+      link.rel = 'stylesheet'
+      link.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap'
+      document.head.appendChild(link)
+    }
+
+    return () => {
+      // Restaura o body ao estado original ao sair da página NCM
+      document.body.style.background = prevBg
+      document.body.style.color = prevColor
+    }
+  }, [])
 
   const suggestions = ['smartphone','calçados','soja','automóvel','8471','6109','0901','8517','3004']
 
