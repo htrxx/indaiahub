@@ -4,23 +4,188 @@ import { useState, useRef, useCallback } from 'react'
 
 interface NcmItem { codigo: string; descricao: string; tipo: string; ii?: number | null }
 
-/* ── Helpers ────────────────────────────── */
-function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
-  return (
-    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, color, background: bg, flexShrink: 0 }}>
-      {label}
-    </span>
-  )
+/* ── Spinning border animation styles (injected once) ── */
+const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap');
+
+  @keyframes spin-border {
+    from { --border-angle: 0deg; }
+    to   { --border-angle: 360deg; }
+  }
+  @keyframes ncm-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* Wrapper: clips overflow so only the thin border edge is visible */
+  .ncm-card-wrap {
+    position: relative;
+    border-radius: 20px;
+    padding: 2px;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+    background: rgba(56,189,248,0.1);
+  }
+
+  /*
+    The spinning element is a square large enough to cover the wrapper entirely.
+    It spins in place. The conic gradient has a thin bright arc (~40deg) and is
+    otherwise transparent — so only the arc sweeps around the border edge.
+    overflow:hidden on the wrapper clips everything except the 2px border strip.
+  */
+  .ncm-card-wrap::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 160deg,
+      rgba(56,189,248,0.15) 180deg,
+      #38bdf8 200deg,
+      #bae6fd 210deg,
+      #38bdf8 220deg,
+      rgba(56,189,248,0.15) 240deg,
+      transparent 260deg,
+      transparent 360deg
+    );
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: rotateBorder 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes rotateBorder {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  .ncm-card-wrap:hover::before {
+    opacity: 1;
+  }
+  .ncm-card-wrap:hover {
+    transform: scale(1.015);
+    box-shadow: 0 24px 60px rgba(14, 165, 233, 0.18), 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Card fills the wrapper minus the 2px padding border */
+  .ncm-card {
+    position: relative;
+    z-index: 1;
+    border-radius: 18px;
+    background: #0d1b2e;
+    width: 100%;
+    height: 100%;
+  }
+  .ncm-card-inner {
+    position: relative;
+    z-index: 2;
+  }
+
+  .ncm-result-row {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border-radius: 10px;
+    border: 1px solid rgba(56,189,248,0.12);
+    background: rgba(255,255,255,0.02);
+    animation: fadeSlideIn 0.25s ease both;
+  }
+  .ncm-result-row:hover {
+    border-color: rgba(56,189,248,0.45);
+    background: rgba(56,189,248,0.06);
+    transform: translateX(4px);
+  }
+
+  .ncm-chip-btn {
+    transition: all 0.2s ease;
+    border: 1px solid rgba(56,189,248,0.2);
+    background: rgba(56,189,248,0.05);
+    color: #7dd3fc;
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .ncm-chip-btn:hover {
+    border-color: #38bdf8;
+    background: rgba(56,189,248,0.15);
+    color: #e0f2fe;
+  }
+
+  .ncm-input {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1.5px solid rgba(56,189,248,0.2) !important;
+    color: #e2e8f0 !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+  }
+  .ncm-input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.12) !important;
+    outline: none !important;
+  }
+  .ncm-input::placeholder { color: #475569 !important; }
+
+  .ncm-btn-primary {
+    background: linear-gradient(135deg, #0ea5e9, #1d4ed8);
+    border: none;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+  }
+  .ncm-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(14,165,233,0.45);
+  }
+
+  .ncm-scrollbar::-webkit-scrollbar { width: 4px; }
+  .ncm-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .ncm-scrollbar::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 4px; }
+
+  .ncm-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+`
+
+function StyleInjector() {
+  return <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
 }
 
+/* ── Badges ── */
 function IIBadge({ ii }: { ii?: number | null }) {
-  if (ii === null || ii === undefined) return <Badge label="II: —" color="var(--text-3)" bg="var(--surface)" />
-  const color = ii === 0 ? 'var(--green)' : ii <= 10 ? 'var(--brand-core)' : ii <= 20 ? 'var(--yellow)' : 'var(--red)'
-  const bg    = ii === 0 ? 'rgba(16,185,129,0.08)' : ii <= 10 ? 'rgba(21,101,192,0.08)' : ii <= 20 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'
-  return <Badge label={`II: ${ii}%`} color={color} bg={bg} />
+  if (ii === null || ii === undefined)
+    return <span className="ncm-badge" style={{ color: '#64748b', background: 'rgba(100,116,139,0.1)' }}>II: —</span>
+  const [color, bg] =
+    ii === 0   ? ['#34d399', 'rgba(52,211,153,0.1)'] :
+    ii <= 10   ? ['#38bdf8', 'rgba(56,189,248,0.1)'] :
+    ii <= 20   ? ['#fbbf24', 'rgba(251,191,36,0.1)'] :
+                 ['#f87171', 'rgba(248,113,113,0.1)']
+  return <span className="ncm-badge" style={{ color, background: bg }}>II: {ii}%</span>
 }
 
-/* ── Detail modal ───────────────────────── */
+/* ── Detail modal ── */
 function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void }) {
   const cap = item.codigo.replace(/\D/g, '').slice(0, 2)
   const pis = 2.1
@@ -28,65 +193,72 @@ function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void 
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999,
+        background: 'rgba(0,8,20,0.75)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--bg-card)', borderRadius: 20, padding: 32, maxWidth: 560, width: '100%', border: '1px solid var(--border)', boxShadow: 'var(--shx)', maxHeight: '90vh', overflowY: 'auto' }}
+        className="ncm-card"
+        style={{ maxWidth: 580, width: '100%', maxHeight: '90vh' }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontFamily: 'DM Mono', fontSize: 26, fontWeight: 500, color: 'var(--brand-core)', marginBottom: 4 }}>{item.codigo}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, maxWidth: 420 }}>{item.descricao}</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, color: 'var(--text-3)', cursor: 'pointer', flexShrink: 0, marginLeft: 12, lineHeight: 1 }}>×</button>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: '6px 10px', background: 'var(--brand-frost)', borderRadius: 8, width: 'fit-content' }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--brand-core)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-core)', letterSpacing: '0.05em' }}>Portal Único Siscomex · TEC/NCM</span>
-        </div>
-
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 12 }}>Tributos na Importação</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-          {[
-            { label: 'II — Imposto de Importação',       val: item.ii != null ? `${item.ii}%` : 'Consultar', sub: 'Base: TEC/CAMEX',  color: item.ii === 0 ? 'var(--green)' : 'var(--brand-sky)' },
-            { label: 'IPI — Imp. Prod. Industrializado', val: 'Variável',                                    sub: 'Consultar TIPI',   color: 'var(--text-3)' },
-            { label: 'PIS/Importação',                   val: `${pis}%`,                                     sub: 'Lei 10.865/2004', color: 'var(--brand-core)' },
-            { label: 'COFINS/Importação',                val: `${cofins}%`,                                  sub: 'Lei 10.865/2004', color: 'var(--brand-core)' },
-          ].map(t => (
-            <div key={t.label} style={{ background: 'var(--bg-alt)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
-              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 6 }}>{t.label}</div>
-              <div style={{ fontFamily: 'DM Mono', fontSize: 22, fontWeight: 500, color: t.color }}>{t.val}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>{t.sub}</div>
+        <div className="ncm-card-inner" style={{ padding: 32, overflowY: 'auto', maxHeight: '90vh' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 600, color: '#38bdf8', marginBottom: 6 }}>{item.codigo}</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7, maxWidth: 440 }}>{item.descricao}</div>
             </div>
-          ))}
-        </div>
-
-        <div style={{ background: 'var(--bg-alt)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 2 }}>Capítulo NCM</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Capítulo {cap}</div>
+            <button onClick={onClose} style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#7dd3fc', cursor: 'pointer', flexShrink: 0, marginLeft: 16 }}>×</button>
           </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 2 }}>PIS + COFINS</div>
-            <div style={{ fontFamily: 'DM Mono', fontSize: 16, color: 'var(--brand-core)' }}>{pis + cofins}%</div>
-          </div>
-        </div>
 
-        <p style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 8, padding: '10px 14px', margin: 0, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-          <span>Alíquotas do II são referências pela TEC/CAMEX por capítulo. Para valores exatos, ex-tarifários e acordos comerciais (MERCOSUL, ALADI) consulte o{' '}
-            <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ color: 'var(--brand-sky)' }}>Sistema Classif</a>.
-          </span>
-        </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 24, padding: '5px 12px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 8 }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.08em', fontFamily: "'Syne', sans-serif" }}>Portal Único Siscomex · TEC/NCM</span>
+          </div>
+
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#475569', marginBottom: 12, fontFamily: "'Syne', sans-serif" }}>Tributos na Importação</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+            {[
+              { label: 'II — Imposto de Importação',       val: item.ii != null ? `${item.ii}%` : 'Consultar', sub: 'TEC/CAMEX', color: item.ii === 0 ? '#34d399' : '#38bdf8' },
+              { label: 'IPI — Imp. Prod. Industrializado', val: 'Variável',    sub: 'Consultar TIPI',  color: '#64748b' },
+              { label: 'PIS/Importação',                   val: `${pis}%`,     sub: 'Lei 10.865/2004', color: '#818cf8' },
+              { label: 'COFINS/Importação',                val: `${cofins}%`,  sub: 'Lei 10.865/2004', color: '#818cf8' },
+            ].map(t => (
+              <div key={t.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: 8, fontFamily: "'Syne', sans-serif" }}>{t.label}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 600, color: t.color }}>{t.val}</div>
+                <div style={{ fontSize: 10, color: '#475569', marginTop: 4 }}>{t.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: 4, fontFamily: "'Syne', sans-serif" }}>Capítulo NCM</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0', fontFamily: "'Syne', sans-serif" }}>Capítulo {cap}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: 4, fontFamily: "'Syne', sans-serif" }}>PIS + COFINS</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: '#818cf8', fontWeight: 600 }}>{pis + cofins}%</div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 11, color: '#64748b', lineHeight: 1.7, background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 10, padding: '10px 14px', margin: 0, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            <span>Alíquotas do II são referências pela TEC/CAMEX por capítulo. Para valores exatos consulte o{' '}
+              <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ color: '#38bdf8' }}>Sistema Classif</a>.
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-/* ── Main page ──────────────────────────── */
+/* ── Main page ── */
 export function NcmPage() {
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState<NcmItem[]>([])
@@ -119,168 +291,229 @@ export function NcmPage() {
     if (e.key === 'Enter') { if (debounceRef.current) clearTimeout(debounceRef.current); search(query) }
   }
 
+  const suggestions = ['smartphone','calçados','soja','automóvel','8471','6109','0901','8517','3004']
+
   return (
     <>
+      <StyleInjector />
       {selected && <NcmDetailPanel item={selected} onClose={() => setSelected(null)} />}
 
-      <section className="sec" style={{ background: 'var(--bg-alt)', minHeight: '80vh' }}>
-        <div className="wrap">
-          <div className="sec-eye">NCM — Nomenclatura Comum do Mercosul</div>
-          <h1 className="sec-h">Consulta <span>NCM</span></h1>
-          <p className="sec-p">Pesquise códigos NCM com alíquotas de II, IPI, PIS e COFINS via Portal Único Siscomex.</p>
+      <section style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #020b18 0%, #061526 50%, #040f1f 100%)',
+        padding: '40px 24px',
+        fontFamily: "'Syne', sans-serif",
+      }}>
+        {/* Background grid pattern */}
+        <div style={{
+          position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(14,165,233,0.06) 0%, transparent 50%),
+                            radial-gradient(circle at 80% 80%, rgba(29,78,216,0.08) 0%, transparent 50%)`,
+        }} />
 
-          {/* Card */}
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 36, boxShadow: 'var(--sh)', marginTop: 8 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
-            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24, lineHeight: 1.7 }}>
-              Pesquise por <strong style={{ color: 'var(--text)' }}>código NCM</strong> (ex:{' '}
-              <code style={{ fontFamily: 'DM Mono', fontSize: 12, background: 'var(--surface)', padding: '1px 5px', borderRadius: 4 }}>8471.30</code>) ou por{' '}
-              <strong style={{ color: 'var(--text)' }}>descrição da mercadoria</strong> (ex:{' '}
-              <code style={{ fontFamily: 'DM Mono', fontSize: 12, background: 'var(--surface)', padding: '1px 5px', borderRadius: 4 }}>computador portátil</code>).
-              Dados via <strong style={{ color: 'var(--brand-sky)' }}>Portal Único Siscomex</strong>.
+          {/* Header */}
+          <div style={{ marginBottom: 36, textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 100, marginBottom: 16 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', display: 'inline-block', animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>NCM — Nomenclatura Comum do Mercosul</span>
+            </div>
+            <h1 style={{ fontSize: 56, fontWeight: 800, color: '#f0f9ff', margin: 0, lineHeight: 1.15, letterSpacing: '-0.03em', fontFamily: "'Space Grotesk', 'Syne', sans-serif" }}>
+              Consulta <span style={{ color: '#38bdf8' }}>NCM</span>
+            </h1>
+            <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 10, fontWeight: 400 }}>
+              Pesquise códigos NCM com alíquotas de II, IPI, PIS e COFINS via Portal Único Siscomex.
             </p>
+          </div>
 
-            {/* Search bar */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input
-                  value={query}
-                  onChange={handleChange}
-                  onKeyDown={handleKeyDown}
-                  autoFocus
-                  placeholder="Código NCM (ex: 8471.30) ou descrição (ex: smartphone)"
-                  style={{
-                    width: '100%', padding: '13px 16px 13px 42px',
-                    border: '1.5px solid var(--border)', borderRadius: 10,
-                    background: 'var(--input-bg)', fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 14, color: 'var(--text)', outline: 'none',
-                    transition: 'border-color 0.2s',
-                  }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--brand-core)')}
-                  onBlur={e  => (e.target.style.borderColor = 'var(--border)')}
-                />
-              </div>
-              <button
-                onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); search(query) }}
-                style={{
-                  padding: '0 24px', borderRadius: 10, background: 'var(--brand-core)',
-                  border: 'none', fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: 700,
-                  color: 'white', cursor: 'pointer', whiteSpace: 'nowrap',
-                  boxShadow: '0 4px 16px rgba(21,101,192,0.3)',
-                }}>
-                Consultar
-              </button>
-            </div>
+          {/* Two-column layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 24, alignItems: 'start' }}>
 
-            {/* Suggestion chips */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-              {['smartphone','calçados','soja','automóvel','8471','6109','0901','8517','3004'].map(s => (
-                <button key={s} onClick={() => { setQuery(s); search(s) }} style={{
-                  padding: '4px 12px', borderRadius: 100,
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  fontFamily: 'Plus Jakarta Sans', fontSize: 11, fontWeight: 600,
-                  color: 'var(--text-3)', cursor: 'pointer', transition: 'all 0.15s',
-                }}
-                  onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--brand-core)'; el.style.color = 'var(--brand-core)' }}
-                  onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text-3)' }}
+            {/* ── LEFT COLUMN: Search ── */}
+            <div className="ncm-card-wrap">
+            <div className="ncm-card">
+              <div className="ncm-card-inner" style={{ padding: 28 }}>
+
+                {/* Card title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Pesquisa</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>Código ou descrição</div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20, lineHeight: 1.7 }}>
+                  Pesquise por <strong style={{ color: '#e2e8f0' }}>código NCM</strong>{' '}
+                  (ex: <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, background: 'rgba(56,189,248,0.08)', color: '#38bdf8', padding: '1px 6px', borderRadius: 4 }}>8471.30</code>) ou{' '}
+                  <strong style={{ color: '#e2e8f0' }}>descrição</strong>{' '}
+                  (ex: <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, background: 'rgba(56,189,248,0.08)', color: '#38bdf8', padding: '1px 6px', borderRadius: 4 }}>smartphone</code>).
+                </p>
+
+                {/* Search input */}
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <input
+                    className="ncm-input"
+                    value={query}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                    placeholder="Ex: 8471.30 ou computador portátil"
+                    style={{
+                      width: '100%', padding: '13px 16px 13px 42px',
+                      borderRadius: 12, fontFamily: "'Syne', sans-serif",
+                      fontSize: 14, boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                {/* Consult button */}
+                <button
+                  className="ncm-btn-primary"
+                  onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); search(query) }}
+                  style={{ width: '100%', padding: '13px', borderRadius: 12, fontSize: 14, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.02em', marginBottom: 24 }}
                 >
-                  {s}
+                  Consultar NCM
                 </button>
-              ))}
-            </div>
 
-            {/* Info chips */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
-              {[
-                { svg: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Portal Único Siscomex' },
-                { svg: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>, label: 'TEC/CAMEX' },
-                { svg: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>, label: 'Cache 24h' },
-              ].map(c => (
-                <span key={c.label} style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 100, background: 'var(--brand-frost)', color: 'var(--brand-core)', border: '1px solid var(--brand-pale)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  {c.svg}{c.label}
-                </span>
-              ))}
-            </div>
+                {/* Divider */}
+                <div style={{ borderTop: '1px solid rgba(56,189,248,0.08)', marginBottom: 16 }} />
 
-            {/* Loading */}
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-3)' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--brand-sky)" strokeWidth="2" strokeLinecap="round"
-                  style={{ animation: 'spin 0.8s linear infinite', display: 'block', margin: '0 auto 12px' }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                <div style={{ fontSize: 14 }}>Consultando Portal Único Siscomex…</div>
-              </div>
-            )}
-
-            {/* Error */}
-            {!loading && error && (
-              <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '20px 24px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)', marginBottom: 4 }}>Erro ao consultar a API</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 10 }}>{error}</div>
-                  <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ fontSize: 12, color: 'var(--brand-sky)' }}>
-                    Acessar Sistema Classif diretamente →
-                  </a>
+                {/* Suggestions */}
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7dd3fc', marginBottom: 10 }}>Sugestões</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 24 }}>
+                  {suggestions.map(s => (
+                    <button key={s} className="ncm-chip-btn" onClick={() => { setQuery(s); search(s) }}>{s}</button>
+                  ))}
                 </div>
-              </div>
-            )}
 
-            {/* No results */}
-            {!loading && !error && searched && results.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-3)' }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gray-2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 12px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/></svg>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Nenhum resultado encontrado</div>
-                <p style={{ fontSize: 13 }}>Tente outros termos ou consulte o <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ color: 'var(--brand-sky)' }}>Sistema Classif</a> diretamente.</p>
-              </div>
-            )}
+                {/* Divider */}
+                <div style={{ borderTop: '1px solid rgba(56,189,248,0.08)', marginBottom: 16 }} />
 
-            {/* Results */}
-            {!loading && !error && results.length > 0 && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 12 }}>
-                  {results.length} resultado{results.length !== 1 ? 's' : ''} · clique para ver tributos
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {results.map(item => (
-                    <div
-                      key={item.codigo}
-                      onClick={() => setSelected(item)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--bg-alt)', transition: 'all 0.15s' }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--brand-core)'; el.style.background = 'var(--brand-frost)' }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-alt)' }}
-                    >
-                      <span style={{ fontFamily: 'DM Mono', fontSize: 13, fontWeight: 500, color: 'var(--brand-core)', flexShrink: 0, minWidth: 88 }}>{item.codigo}</span>
-                      <span style={{ fontSize: 13, color: 'var(--text-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.descricao}</span>
-                      <IIBadge ii={item.ii} />
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="m9 18 6-6-6-6"/></svg>
+                {/* Info badges */}
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7dd3fc', marginBottom: 10 }}>Fonte dos Dados</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Portal Único Siscomex' },
+                    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>, label: 'TEC/CAMEX' },
+                    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>, label: 'Cache 24h' },
+                  ].map(c => (
+                    <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#cbd5e1' }}>
+                      {c.icon} {c.label}
                     </div>
                   ))}
                 </div>
-                {results.length >= 80 && (
-                  <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12, textAlign: 'center' }}>
-                    Exibindo os primeiros 80 resultados. Refine a busca para resultados mais precisos.
-                  </p>
-                )}
               </div>
-            )}
+            </div>
+            </div>
 
-            {/* Initial state */}
-            {!loading && !error && !searched && (
-              <div style={{ textAlign: 'center', padding: '40px 0 20px', color: 'var(--text-3)' }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 16px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>Consulte a tabela NCM oficial</div>
-                <p style={{ fontSize: 13, maxWidth: 400, margin: '0 auto', lineHeight: 1.7 }}>
-                  Digite o código NCM ou uma palavra-chave acima. Os dados são carregados diretamente do Portal Único Siscomex.
-                </p>
+            {/* ── RIGHT COLUMN: Results ── */}
+            <div className="ncm-card-wrap">
+            <div className="ncm-card" style={{ minHeight: 500 }}>
+              <div className="ncm-card-inner ncm-scrollbar" style={{ padding: 28, maxHeight: '80vh', overflowY: 'auto' }}>
+
+                {/* Card title */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1d4ed8, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Resultados</div>
+                      <div style={{ fontSize: 11, color: '#475569' }}>
+                        {loading ? 'Buscando…' : results.length > 0 ? `${results.length} item${results.length !== 1 ? 's' : ''} encontrado${results.length !== 1 ? 's' : ''}` : 'Aguardando pesquisa'}
+                      </div>
+                    </div>
+                  </div>
+                  {results.length > 0 && !loading && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#38bdf8', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', padding: '3px 10px', borderRadius: 100, letterSpacing: '0.05em' }}>
+                      Clique para ver tributos →
+                    </span>
+                  )}
+                </div>
+
+                {/* Loading */}
+                {loading && (
+                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#475569' }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round"
+                      style={{ animation: 'ncm-spin 0.8s linear infinite', display: 'block', margin: '0 auto 16px' }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    <div style={{ fontSize: 14, color: '#64748b' }}>Consultando Portal Único Siscomex…</div>
+                  </div>
+                )}
+
+                {/* Error */}
+                {!loading && error && (
+                  <div style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 14, padding: '20px 24px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f87171', marginBottom: 4 }}>Erro ao consultar a API</div>
+                      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>{error}</div>
+                      <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ fontSize: 12, color: '#38bdf8' }}>
+                        Acessar Sistema Classif diretamente →
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* No results */}
+                {!loading && !error && searched && results.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#334155' }}>
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 16px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/></svg>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#475569', marginBottom: 8 }}>Nenhum resultado</div>
+                    <p style={{ fontSize: 13, color: '#334155' }}>Tente outros termos ou consulte o{' '}
+                      <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ color: '#38bdf8' }}>Sistema Classif</a>.
+                    </p>
+                  </div>
+                )}
+
+                {/* Initial state */}
+                {!loading && !error && !searched && (
+                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#1e3a5f' }}>
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 20px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#334155', marginBottom: 10 }}>Consulte a tabela NCM</div>
+                    <p style={{ fontSize: 13, color: '#1e3a5f', maxWidth: 360, margin: '0 auto', lineHeight: 1.8 }}>
+                      Digite um código NCM ou palavra-chave na caixa de pesquisa ao lado. Os resultados aparecem aqui automaticamente.
+                    </p>
+                  </div>
+                )}
+
+                {/* Results list */}
+                {!loading && !error && results.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {results.map((item, i) => (
+                      <div
+                        key={item.codigo}
+                        className="ncm-result-row"
+                        onClick={() => setSelected(item)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', animationDelay: `${Math.min(i * 30, 300)}ms` }}
+                      >
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: '#38bdf8', flexShrink: 0, minWidth: 88 }}>{item.codigo}</span>
+                        <span style={{ fontSize: 13, color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.descricao}</span>
+                        <IIBadge ii={item.ii} />
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="m9 18 6-6-6-6"/></svg>
+                      </div>
+                    ))}
+                    {results.length >= 80 && (
+                      <p style={{ fontSize: 12, color: '#334155', marginTop: 12, textAlign: 'center' }}>
+                        Exibindo os primeiros 80 resultados. Refine a busca para resultados mais precisos.
+                      </p>
+                    )}
+                  </div>
+                )}
+
               </div>
-            )}
+            </div>
+            </div>
 
           </div>
         </div>

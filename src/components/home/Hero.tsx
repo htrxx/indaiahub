@@ -39,6 +39,7 @@ interface RateData { usd: string; eur: string; chg: string; isUp: boolean; time:
 export function Hero() {
   const { displayed, done } = useTypewriter(FULL_TEXT)
   const [phraseIdx, setPhraseIdx] = useState(0)
+  const [phraseVisible, setPhraseVisible] = useState(true)
   const [scrolled, setScrolled] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoReady, setVideoReady] = useState(false)
@@ -58,7 +59,13 @@ export function Hero() {
   const [rate, setRate] = useState<RateData>({ usd: 'R$ —', eur: 'R$ —', chg: '—', isUp: true, time: '—' })
 
   useEffect(() => {
-    const id = setInterval(() => setPhraseIdx(p => (p + 1) % PHRASES.length), 3800)
+    const id = setInterval(() => {
+      setPhraseVisible(false)
+      setTimeout(() => {
+        setPhraseIdx(p => (p + 1) % PHRASES.length)
+        setPhraseVisible(true)
+      }, 400)
+    }, 3800)
     return () => clearInterval(id)
   }, [])
 
@@ -127,39 +134,48 @@ export function Hero() {
       <style>{`
         @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes arrowPulse { from{opacity:0.8} to{opacity:0.15} }
+        @keyframes phraseIn   { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+        @keyframes phraseOut  { from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-8px)} }
 
         .hero-inner {
           position: relative;
           z-index: 2;
-          padding-left:  var(--page-px);
-          padding-right: var(--page-px);
+          padding-left:  var(--page-px, 24px);
+          padding-right: var(--page-px, 24px);
           width: 100%;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
         }
 
         .hero-title {
-          font-size: clamp(28px, 4.5vw, 68px);
+          font-size: clamp(14px, 4.2vw, 72px);
           font-weight: 800;
           line-height: 1.1;
           letter-spacing: -0.03em;
-          white-space: normal;
-          word-break: break-word;
-          overflow-wrap: break-word;
+          white-space: nowrap;
           max-width: 100%;
+          overflow: visible;
         }
 
         .hero-sub {
-          font-size: clamp(14px, 1.4vw, 17px);
-          max-width: min(560px, 100%);
+          font-size: clamp(13px, 1.4vw, 17px);
+          max-width: min(600px, 100%);
           margin-top: 20px;
+          text-align: center;
+          line-height: 1.7;
         }
 
         .hero-ctas {
           display: flex;
           flex-direction: row;
-          gap: 14px;
+          gap: 16px;
           flex-wrap: wrap;
-          margin-top: 32px;
+          margin-top: 36px;
+          justify-content: center;
+          width: 100%;
         }
 
         .hero-badge {
@@ -167,10 +183,37 @@ export function Hero() {
           margin-bottom: 20px;
         }
 
+        /* Tablet: quebra em 2 linhas, fonte maior */
+        @media (max-width: 860px) {
+          .hero-title {
+            white-space: normal;
+            word-break: keep-all;
+            font-size: clamp(24px, 5.5vw, 48px);
+            max-width: 88vw;
+          }
+          .hero-sub { font-size: 15px; }
+        }
+
+        /* Mobile */
         @media (max-width: 600px) {
-          .hero-title { font-size: clamp(26px, 7vw, 38px); }
-          .hero-ctas  { flex-direction: column; }
-          .hero-ctas a, .hero-ctas button { width: 100%; justify-content: center; }
+          .hero-inner { padding-left: 20px; padding-right: 20px; }
+          .hero-title {
+            white-space: normal;
+            word-break: keep-all;
+            font-size: clamp(20px, 7vw, 32px);
+            letter-spacing: -0.02em;
+            max-width: 100%;
+          }
+          .hero-sub { font-size: 14px; max-width: 100%; }
+          .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
+          .hero-ctas a, .hero-ctas button { width: 100% !important; justify-content: center; box-sizing: border-box; }
+          .hero-badge { font-size: 10px; }
+        }
+
+        /* Mobile pequeno */
+        @media (max-width: 380px) {
+          .hero-title { font-size: 18px; }
+          .hero-sub   { font-size: 13px; }
         }
       `}</style>
 
@@ -213,7 +256,14 @@ export function Hero() {
         </h1>
 
         <div className={styles.subWrap}>
-          <p className={`hero-sub ${styles.sub}`}>{PHRASES[phraseIdx]}</p>
+          <p
+            className={`hero-sub ${styles.sub}`}
+            style={{
+              opacity: phraseVisible ? 1 : 0,
+              transform: phraseVisible ? 'translateY(0)' : 'translateY(-8px)',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
+            }}
+          >{PHRASES[phraseIdx]}</p>
         </div>
 
         <div className={`hero-ctas ${styles.ctas}`}>
