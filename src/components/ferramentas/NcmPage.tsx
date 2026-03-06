@@ -4,168 +4,92 @@ import { useState, useRef, useCallback } from 'react'
 
 interface NcmItem { codigo: string; descricao: string; tipo: string; ii?: number | null }
 
-/* ── Spinning border animation styles (injected once) ── */
 const GLOBAL_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap');
 
-  @keyframes spin-border {
-    from { --border-angle: 0deg; }
-    to   { --border-angle: 360deg; }
-  }
-  @keyframes ncm-spin {
-    to { transform: rotate(360deg); }
-  }
-  @keyframes fadeSlideIn {
+  @keyframes ncm-spin { to { transform: rotate(360deg); } }
+  @keyframes ncm-fadeSlideIn {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  @keyframes pulse-dot {
+  @keyframes ncm-pulse-dot {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.3; }
   }
-
-  /* Wrapper: clips overflow so only the thin border edge is visible */
-  .ncm-card-wrap {
-    position: relative;
-    border-radius: 20px;
-    padding: 2px;
-    overflow: hidden;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
-    background: rgba(56,189,248,0.1);
-  }
-
-  /*
-    The spinning element is a square large enough to cover the wrapper entirely.
-    It spins in place. The conic gradient has a thin bright arc (~40deg) and is
-    otherwise transparent — so only the arc sweeps around the border edge.
-    overflow:hidden on the wrapper clips everything except the 2px border strip.
-  */
-  .ncm-card-wrap::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      transparent 160deg,
-      rgba(56,189,248,0.15) 180deg,
-      #38bdf8 200deg,
-      #bae6fd 210deg,
-      #38bdf8 220deg,
-      rgba(56,189,248,0.15) 240deg,
-      transparent 260deg,
-      transparent 360deg
-    );
-    transform: translate(-50%, -50%) rotate(0deg);
-    animation: rotateBorder 3s linear infinite;
-    opacity: 0;
-    transition: opacity 0.35s ease;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  @keyframes rotateBorder {
+  @keyframes ncm-rotateBorder {
     from { transform: translate(-50%, -50%) rotate(0deg); }
     to   { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
-  .ncm-card-wrap:hover::before {
-    opacity: 1;
+  [data-ncm] .ncm-card-wrap {
+    position: relative; border-radius: 20px; padding: 2px; overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+    background: rgba(56,189,248,0.1);
   }
-  .ncm-card-wrap:hover {
+  [data-ncm] .ncm-card-wrap::before {
+    content: ''; position: absolute; top: 50%; left: 50%; width: 200%; height: 200%;
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 160deg,
+      rgba(56,189,248,0.15) 180deg, #38bdf8 200deg, #bae6fd 210deg,
+      #38bdf8 220deg, rgba(56,189,248,0.15) 240deg, transparent 260deg, transparent 360deg);
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: ncm-rotateBorder 3s linear infinite;
+    opacity: 0; transition: opacity 0.35s ease; z-index: 0; pointer-events: none;
+  }
+  [data-ncm] .ncm-card-wrap:hover::before { opacity: 1; }
+  [data-ncm] .ncm-card-wrap:hover {
     transform: scale(1.015);
-    box-shadow: 0 24px 60px rgba(14, 165, 233, 0.18), 0 8px 24px rgba(0,0,0,0.4);
+    box-shadow: 0 24px 60px rgba(14,165,233,0.18), 0 8px 24px rgba(0,0,0,0.4);
   }
+  [data-ncm] .ncm-card {
+    position: relative; z-index: 1; border-radius: 18px;
+    background: #0d1b2e; width: 100%; height: 100%;
+  }
+  [data-ncm] .ncm-card-inner { position: relative; z-index: 2; }
 
-  /* Card fills the wrapper minus the 2px padding border */
-  .ncm-card {
-    position: relative;
-    z-index: 1;
-    border-radius: 18px;
-    background: #0d1b2e;
-    width: 100%;
-    height: 100%;
+  [data-ncm] .ncm-result-row {
+    transition: all 0.2s ease; cursor: pointer; border-radius: 10px;
+    border: 1px solid rgba(56,189,248,0.12); background: rgba(255,255,255,0.02);
+    animation: ncm-fadeSlideIn 0.25s ease both;
   }
-  .ncm-card-inner {
-    position: relative;
-    z-index: 2;
-  }
-
-  .ncm-result-row {
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border-radius: 10px;
-    border: 1px solid rgba(56,189,248,0.12);
-    background: rgba(255,255,255,0.02);
-    animation: fadeSlideIn 0.25s ease both;
-  }
-  .ncm-result-row:hover {
-    border-color: rgba(56,189,248,0.45);
-    background: rgba(56,189,248,0.06);
+  [data-ncm] .ncm-result-row:hover {
+    border-color: rgba(56,189,248,0.45); background: rgba(56,189,248,0.06);
     transform: translateX(4px);
   }
-
-  .ncm-chip-btn {
-    transition: all 0.2s ease;
-    border: 1px solid rgba(56,189,248,0.2);
-    background: rgba(56,189,248,0.05);
-    color: #7dd3fc;
-    border-radius: 100px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: 'Syne', sans-serif;
-    cursor: pointer;
-    letter-spacing: 0.02em;
+  [data-ncm] .ncm-chip-btn {
+    transition: all 0.2s ease; border: 1px solid rgba(56,189,248,0.2);
+    background: rgba(56,189,248,0.05); color: #7dd3fc; border-radius: 100px;
+    padding: 4px 12px; font-size: 11px; font-weight: 600;
+    font-family: 'Syne', sans-serif; cursor: pointer; letter-spacing: 0.02em;
   }
-  .ncm-chip-btn:hover {
-    border-color: #38bdf8;
-    background: rgba(56,189,248,0.15);
-    color: #e0f2fe;
+  [data-ncm] .ncm-chip-btn:hover {
+    border-color: #38bdf8; background: rgba(56,189,248,0.15); color: #e0f2fe;
   }
-
-  .ncm-input {
+  [data-ncm] .ncm-input {
     background: rgba(255,255,255,0.04) !important;
     border: 1.5px solid rgba(56,189,248,0.2) !important;
     color: #e2e8f0 !important;
     transition: border-color 0.2s, box-shadow 0.2s !important;
   }
-  .ncm-input:focus {
+  [data-ncm] .ncm-input:focus {
     border-color: #38bdf8 !important;
     box-shadow: 0 0 0 3px rgba(56,189,248,0.12) !important;
     outline: none !important;
   }
-  .ncm-input::placeholder { color: #475569 !important; }
-
-  .ncm-btn-primary {
-    background: linear-gradient(135deg, #0ea5e9, #1d4ed8);
-    border: none;
-    color: white;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  [data-ncm] .ncm-input::placeholder { color: #475569 !important; }
+  [data-ncm] .ncm-btn-primary {
+    background: linear-gradient(135deg, #0ea5e9, #1d4ed8); border: none; color: white;
+    font-weight: 700; cursor: pointer; transition: all 0.2s ease;
     box-shadow: 0 4px 20px rgba(14,165,233,0.3);
   }
-  .ncm-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(14,165,233,0.45);
+  [data-ncm] .ncm-btn-primary:hover {
+    transform: translateY(-1px); box-shadow: 0 8px 28px rgba(14,165,233,0.45);
   }
-
-  .ncm-scrollbar::-webkit-scrollbar { width: 4px; }
-  .ncm-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .ncm-scrollbar::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 4px; }
-
-  .ncm-badge {
-    font-size: 9px;
-    font-weight: 800;
-    padding: 2px 7px;
-    border-radius: 4px;
-    letter-spacing: 0.05em;
-    flex-shrink: 0;
-    font-family: 'JetBrains Mono', monospace;
+  [data-ncm] .ncm-scrollbar::-webkit-scrollbar { width: 4px; }
+  [data-ncm] .ncm-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  [data-ncm] .ncm-scrollbar::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 4px; }
+  [data-ncm] .ncm-badge {
+    font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
+    letter-spacing: 0.05em; flex-shrink: 0; font-family: 'JetBrains Mono', monospace;
   }
 `
 
@@ -173,7 +97,6 @@ function StyleInjector() {
   return <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
 }
 
-/* ── Badges ── */
 function IIBadge({ ii }: { ii?: number | null }) {
   if (ii === null || ii === undefined)
     return <span className="ncm-badge" style={{ color: '#64748b', background: 'rgba(100,116,139,0.1)' }}>II: —</span>
@@ -185,27 +108,24 @@ function IIBadge({ ii }: { ii?: number | null }) {
   return <span className="ncm-badge" style={{ color, background: bg }}>II: {ii}%</span>
 }
 
-/* ── Detail modal ── */
 function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void }) {
   const cap = item.codigo.replace(/\D/g, '').slice(0, 2)
   const pis = 2.1
   const cofins = 9.65
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 999,
-        background: 'rgba(0,8,20,0.75)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        className="ncm-card"
-        style={{ maxWidth: 580, width: '100%', maxHeight: '90vh' }}
-      >
-        <div className="ncm-card-inner" style={{ padding: 32, overflowY: 'auto', maxHeight: '90vh' }}>
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 999,
+      background: 'rgba(0,8,20,0.75)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth: 580, width: '100%', maxHeight: '90vh',
+        background: '#0d1b2e', borderRadius: 20,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        border: '1px solid rgba(56,189,248,0.15)',
+      }}>
+        <div style={{ padding: 32, overflowY: 'auto', maxHeight: '90vh' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 28, fontWeight: 600, color: '#38bdf8', marginBottom: 6 }}>{item.codigo}</div>
@@ -222,10 +142,10 @@ function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void 
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#475569', marginBottom: 12, fontFamily: "'Syne', sans-serif" }}>Tributos na Importação</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
             {[
-              { label: 'II — Imposto de Importação',       val: item.ii != null ? `${item.ii}%` : 'Consultar', sub: 'TEC/CAMEX', color: item.ii === 0 ? '#34d399' : '#38bdf8' },
-              { label: 'IPI — Imp. Prod. Industrializado', val: 'Variável',    sub: 'Consultar TIPI',  color: '#64748b' },
-              { label: 'PIS/Importação',                   val: `${pis}%`,     sub: 'Lei 10.865/2004', color: '#818cf8' },
-              { label: 'COFINS/Importação',                val: `${cofins}%`,  sub: 'Lei 10.865/2004', color: '#818cf8' },
+              { label: 'II — Imposto de Importação',       val: item.ii != null ? `${item.ii}%` : 'Consultar', sub: 'TEC/CAMEX',      color: item.ii === 0 ? '#34d399' : '#38bdf8' },
+              { label: 'IPI — Imp. Prod. Industrializado', val: 'Variável',   sub: 'Consultar TIPI',  color: '#64748b' },
+              { label: 'PIS/Importação',                   val: `${pis}%`,    sub: 'Lei 10.865/2004', color: '#818cf8' },
+              { label: 'COFINS/Importação',                val: `${cofins}%`, sub: 'Lei 10.865/2004', color: '#818cf8' },
             ].map(t => (
               <div key={t.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: 12, padding: '14px 16px' }}>
                 <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: 8, fontFamily: "'Syne', sans-serif" }}>{t.label}</div>
@@ -246,7 +166,7 @@ function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void 
             </div>
           </div>
 
-          <p style={{ fontSize: 11, color: '#64748b', lineHeight: 1.7, background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 10, padding: '10px 14px', margin: 0, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <p style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.7, background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 10, padding: '10px 14px', margin: 0, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
             <span>Alíquotas do II são referências pela TEC/CAMEX por capítulo. Para valores exatos consulte o{' '}
               <a href="https://portalunico.siscomex.gov.br/classif/?perfil=publico" target="_blank" rel="noopener" style={{ color: '#38bdf8' }}>Sistema Classif</a>.
@@ -258,7 +178,6 @@ function NcmDetailPanel({ item, onClose }: { item: NcmItem; onClose: () => void 
   )
 }
 
-/* ── Main page ── */
 export function NcmPage() {
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState<NcmItem[]>([])
@@ -298,26 +217,14 @@ export function NcmPage() {
       <StyleInjector />
       {selected && <NcmDetailPanel item={selected} onClose={() => setSelected(null)} />}
 
-      <section style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #020b18 0%, #061526 50%, #040f1f 100%)',
-        padding: '40px 24px',
-        fontFamily: "'Syne', sans-serif",
-      }}>
-        {/* Background grid pattern */}
-        <div style={{
-          position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(14,165,233,0.06) 0%, transparent 50%),
-                            radial-gradient(circle at 80% 80%, rgba(29,78,216,0.08) 0%, transparent 50%)`,
-        }} />
-
-        <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+      <section data-ncm style={{ padding: '40px 24px', fontFamily: "'Syne', sans-serif", background: 'linear-gradient(135deg, #020b18 0%, #061526 50%, #040f1f 100%)', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
           {/* Header */}
           <div style={{ marginBottom: 36, textAlign: 'center' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 100, marginBottom: 16 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', display: 'inline-block', animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>NCM — Nomenclatura Comum do Mercosul</span>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', display: 'inline-block', animation: 'ncm-pulse-dot 1.5s ease-in-out infinite' }} />
+              <span style={{ fontFamily: "'Space Grotesk', 'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>NCM — Nomenclatura Comum do Mercosul</span>
             </div>
             <h1 style={{ fontSize: 56, fontWeight: 800, color: '#f0f9ff', margin: 0, lineHeight: 1.15, letterSpacing: '-0.03em', fontFamily: "'Space Grotesk', 'Syne', sans-serif" }}>
               Consulta <span style={{ color: '#38bdf8' }}>NCM</span>
@@ -330,12 +237,11 @@ export function NcmPage() {
           {/* Two-column layout */}
           <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 24, alignItems: 'start' }}>
 
-            {/* ── LEFT COLUMN: Search ── */}
+            {/* ── LEFT: Search ── */}
             <div className="ncm-card-wrap">
             <div className="ncm-card">
               <div className="ncm-card-inner" style={{ padding: 28 }}>
 
-                {/* Card title */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -346,7 +252,6 @@ export function NcmPage() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20, lineHeight: 1.7 }}>
                   Pesquise por <strong style={{ color: '#e2e8f0' }}>código NCM</strong>{' '}
                   (ex: <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, background: 'rgba(56,189,248,0.08)', color: '#38bdf8', padding: '1px 6px', borderRadius: 4 }}>8471.30</code>) ou{' '}
@@ -354,7 +259,6 @@ export function NcmPage() {
                   (ex: <code style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, background: 'rgba(56,189,248,0.08)', color: '#38bdf8', padding: '1px 6px', borderRadius: 4 }}>smartphone</code>).
                 </p>
 
-                {/* Search input */}
                 <div style={{ position: 'relative', marginBottom: 12 }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
@@ -367,27 +271,12 @@ export function NcmPage() {
                     onKeyDown={handleKeyDown}
                     autoFocus
                     placeholder="Ex: 8471.30 ou computador portátil"
-                    style={{
-                      width: '100%', padding: '13px 16px 13px 42px',
-                      borderRadius: 12, fontFamily: "'Syne', sans-serif",
-                      fontSize: 14, boxSizing: 'border-box',
-                    }}
+                    style={{ width: '100%', padding: '13px 16px 13px 42px', borderRadius: 12, fontFamily: "'Syne', sans-serif", fontSize: 14, boxSizing: 'border-box' }}
                   />
                 </div>
 
-                {/* Consult button */}
-                <button
-                  className="ncm-btn-primary"
-                  onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); search(query) }}
-                  style={{ width: '100%', padding: '13px', borderRadius: 12, fontSize: 14, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.02em', marginBottom: 24 }}
-                >
-                  Consultar NCM
-                </button>
-
-                {/* Divider */}
                 <div style={{ borderTop: '1px solid rgba(56,189,248,0.08)', marginBottom: 16 }} />
 
-                {/* Suggestions */}
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7dd3fc', marginBottom: 10 }}>Sugestões</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 24 }}>
                   {suggestions.map(s => (
@@ -395,10 +284,8 @@ export function NcmPage() {
                   ))}
                 </div>
 
-                {/* Divider */}
                 <div style={{ borderTop: '1px solid rgba(56,189,248,0.08)', marginBottom: 16 }} />
 
-                {/* Info badges */}
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7dd3fc', marginBottom: 10 }}>Fonte dos Dados</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
@@ -415,12 +302,11 @@ export function NcmPage() {
             </div>
             </div>
 
-            {/* ── RIGHT COLUMN: Results ── */}
+            {/* ── RIGHT: Results ── */}
             <div className="ncm-card-wrap">
             <div className="ncm-card" style={{ minHeight: 500 }}>
               <div className="ncm-card-inner ncm-scrollbar" style={{ padding: 28, maxHeight: '80vh', overflowY: 'auto' }}>
 
-                {/* Card title */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1d4ed8, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -440,7 +326,6 @@ export function NcmPage() {
                   )}
                 </div>
 
-                {/* Loading */}
                 {loading && (
                   <div style={{ textAlign: 'center', padding: '80px 0', color: '#475569' }}>
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round"
@@ -451,7 +336,6 @@ export function NcmPage() {
                   </div>
                 )}
 
-                {/* Error */}
                 {!loading && error && (
                   <div style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 14, padding: '20px 24px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
@@ -465,9 +349,8 @@ export function NcmPage() {
                   </div>
                 )}
 
-                {/* No results */}
                 {!loading && !error && searched && results.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#334155' }}>
+                  <div style={{ textAlign: 'center', padding: '80px 0' }}>
                     <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 16px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/></svg>
                     <div style={{ fontSize: 16, fontWeight: 700, color: '#475569', marginBottom: 8 }}>Nenhum resultado</div>
                     <p style={{ fontSize: 13, color: '#334155' }}>Tente outros termos ou consulte o{' '}
@@ -476,9 +359,8 @@ export function NcmPage() {
                   </div>
                 )}
 
-                {/* Initial state */}
                 {!loading && !error && !searched && (
-                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#1e3a5f' }}>
+                  <div style={{ textAlign: 'center', padding: '80px 0' }}>
                     <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 20px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
                     <div style={{ fontSize: 16, fontWeight: 700, color: '#334155', marginBottom: 10 }}>Consulte a tabela NCM</div>
                     <p style={{ fontSize: 13, color: '#1e3a5f', maxWidth: 360, margin: '0 auto', lineHeight: 1.8 }}>
@@ -487,7 +369,6 @@ export function NcmPage() {
                   </div>
                 )}
 
-                {/* Results list */}
                 {!loading && !error && results.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {results.map((item, i) => (
