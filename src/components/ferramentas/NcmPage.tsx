@@ -93,10 +93,22 @@ const GLOBAL_STYLES = `
   }
 `
 
-function StyleInjector() {
-  return <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
-}
+import { useEffect } from 'react'
 
+function StyleInjector() {
+  useEffect(() => {
+    const el = document.createElement('style')
+    el.setAttribute('data-ncm-styles', '')
+    el.textContent = GLOBAL_STYLES
+    document.head.appendChild(el)
+
+    return () => {
+      document.head.removeChild(el)
+    }
+  }, [])
+
+  return null
+}
 function IIBadge({ ii }: { ii?: number | null }) {
   if (ii === null || ii === undefined)
     return <span className="ncm-badge" style={{ color: '#64748b', background: 'rgba(100,116,139,0.1)' }}>II: —</span>
