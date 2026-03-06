@@ -269,7 +269,7 @@ export function NewsSection() {
                 </svg>
                 @indaialogistica
               </div>
-              <h2 className="sec-h" style={{ color: 'var(--text)' }}>
+              <h2 className="sec-h" style={{ color: '#0F172A' }}>
                 Acompanhe a INDAIA<br />
                 <span style={{ color: 'var(--brand-core)' }}>no Instagram</span>
               </h2>
@@ -282,8 +282,8 @@ export function NewsSection() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '10px 22px', borderRadius: 10,
-                border: '1.5px solid var(--border)',
-                fontSize: 13, fontWeight: 700, color: 'var(--text-2)',
+                border: '1.5px solid #E2E8F0',
+                fontSize: 13, fontWeight: 700, color: '#0F172A',
                 textDecoration: 'none', transition: 'all 0.2s',
                 whiteSpace: 'nowrap', background: 'transparent', cursor: 'pointer',
               }}
@@ -295,8 +295,8 @@ export function NewsSection() {
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLAnchorElement
-                el.style.borderColor = 'var(--border)'
-                el.style.color = 'var(--text-2)'
+                el.style.borderColor = '#E2E8F0'
+                el.style.color = '#0F172A'
                 el.style.background = 'transparent'
               }}
             >
