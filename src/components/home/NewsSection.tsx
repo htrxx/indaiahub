@@ -140,7 +140,7 @@ function Carousel({ urls }: { urls: string[] }) {
 ═══════════════════════════════════════════════════ */
 export function NewsSection() {
   return (
-    <section className="sec sec-news" id="noticias">
+    <section className="sec sec-news" id="noticias" style={{ background: '#ffffff' }}>
       {/* Script oficial do Instagram — carrega uma vez, processa todos os embeds */}
       <script async src="https://www.instagram.com/embed.js" />
 
