@@ -1,30 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LOCATIONS } from '@/lib/constants'
 
 interface Rate { val: string; chg: string; isUp: boolean; bars: number[] }
-
-function wmoStatus(code: number, wind: number, vis: number, type: 'port' | 'airport') {
-  const isStorm = code >= 95
-  const isRain = code >= 51 && code <= 82
-  const isFog = code >= 45 && code <= 48
-  const wKt = wind / 1.852
-  const visKm = (vis / 1000).toFixed(1)
-  const wStr = `${wind.toFixed(0)} km/h`
-
-  if (type === 'airport') {
-    if (isStorm || wKt > 40 || vis < 800) return { dot: 'bad', label: 'Condições adversas (IFR)', tip: `${isStorm ? 'Tempestade' : 'Vento/Vis.'} · ${wStr} · vis ${visKm}km` }
-    if (isRain || isFog || wKt > 25 || vis < 5000) return { dot: 'warn', label: 'Condições MVFR', tip: `${isRain ? 'Chuva' : isFog ? 'Neblina' : 'Vento'} · ${wStr}` }
-    return { dot: 'ok', label: 'Condições VFR normais', tip: `Tempo bom · ${wStr}` }
-  } else {
-    if (isStorm || wind > 55) return { dot: 'bad', label: 'Operação suspensa', tip: `${isStorm ? 'Tempestade' : 'Ventos'} · ${wStr}` }
-    if (isRain || isFog || wind > 35 || vis < 1000) return { dot: 'warn', label: 'Operação com restrição', tip: `${isRain ? 'Chuva' : isFog ? 'Neblina' : 'Vento'} · ${wStr}` }
-    return { dot: 'ok', label: 'Operando normalmente', tip: `Favorável · ${wStr}` }
-  }
-}
-
-interface PortStatus { id: string; name: string; type: string; dot: string; label: string; tip: string }
 
 export function LiveRates() {
   const [rates, setRates] = useState<Record<string, Rate>>({
@@ -32,8 +10,6 @@ export function LiveRates() {
     EUR: { val: '—', chg: '—', isUp: true, bars: [55, 60, 62, 58, 65, 63, 68] },
     CNY: { val: '—', chg: '—', isUp: false, bars: [40, 42, 38, 45, 43, 41, 44] },
   })
-  const [ports, setPorts] = useState<PortStatus[]>([])
-  const [portsTime, setPortsTime] = useState('')
   const [rateSrc, setRateSrc] = useState('')
 
   useEffect(() => {
@@ -69,40 +45,17 @@ export function LiveRates() {
       } catch {}
     }
 
-    async function fetchPorts() {
-      const results = await Promise.allSettled(LOCATIONS.map(loc =>
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=weather_code,wind_speed_10m,wind_gusts_10m,visibility&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`).then(r => r.json())
-      ))
-
-      const statuses: PortStatus[] = results.map((res, i) => {
-        const loc = LOCATIONS[i]
-        if (res.status === 'fulfilled') {
-          const c = res.value.current
-          const st = wmoStatus(c.weather_code, c.wind_speed_10m, c.visibility ?? 10000, loc.type)
-          return { id: loc.id, name: loc.name, type: loc.type, ...st }
-        }
-        return { id: loc.id, name: loc.name, type: loc.type, dot: 'loading', label: 'Sem dados', tip: 'API indisponível' }
-      })
-
-      setPorts(statuses)
-      setPortsTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-    }
-
     fetchRates()
-    fetchPorts()
     const iv1 = setInterval(fetchRates, 300_000)
-    const iv2 = setInterval(fetchPorts, 600_000)
-    return () => { clearInterval(iv1); clearInterval(iv2) }
+    return () => clearInterval(iv1)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const CURRENCIES = [
-    { code: 'USD', flag: '🇺🇸', name: 'Dólar Comercial', label: 'por USD 1,00' },
-    { code: 'EUR', flag: '🇪🇺', name: 'Euro', label: 'por EUR 1,00' },
-    { code: 'CNY', flag: '🇨🇳', name: 'Yuan Renminbi', label: 'por CNY 1,00' },
+    { code: 'USD', name: 'Dólar Comercial',  label: 'por USD 1,00' },
+    { code: 'EUR', name: 'Euro',             label: 'por EUR 1,00' },
+    { code: 'CNY', name: 'Yuan Renminbi',    label: 'por CNY 1,00' },
   ]
-
-  const dotColor: Record<string, string> = { ok: 'var(--green)', warn: 'var(--yellow)', bad: 'var(--red)', loading: 'var(--gray-2)' }
 
   return (
     <section style={{ background: 'var(--brand-deep)', padding: '80px 48px' }} id="cotacoes">
@@ -135,7 +88,7 @@ export function LiveRates() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>{c.name}</div>
-                  <div style={{ fontSize: 18 }}>{c.flag}</div>
+                  <div style={{ fontFamily: 'DM Mono', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(66,165,245,0.6)', background: 'rgba(66,165,245,0.08)', border: '1px solid rgba(66,165,245,0.12)', padding: '3px 8px', borderRadius: 6 }}>{c.code}</div>
                 </div>
                 <div style={{ fontFamily: 'DM Mono', fontSize: 34, fontWeight: 500, color: 'white', letterSpacing: '-0.02em' }}>{r.val}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>{c.label}</div>
@@ -154,46 +107,6 @@ export function LiveRates() {
           })}
         </div>
 
-        {/* Ports status */}
-        <div style={{ marginTop: 48 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
-              Status Portos & Aeroportos
-            </div>
-            {portsTime && (
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-                Atualizado {portsTime} · Open-Meteo
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            {ports.length === 0 ? (
-              LOCATIONS.map(loc => (
-                <div key={loc.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gray-2)' }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
-                      {loc.type === 'port' ? '⚓' : '✈'} {loc.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>Carregando…</div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              ports.map(p => (
-                <div key={p.id} title={p.tip} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor[p.dot] ?? 'var(--gray-2)', flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
-                      {p.type === 'port' ? '⚓' : '✈'} {p.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{p.label}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
       </div>
     </section>
   )

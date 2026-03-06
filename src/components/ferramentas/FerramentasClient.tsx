@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { INCOTERMS, CHECKLIST_IMP, CHECKLIST_EXP } from '@/lib/constants'
 
-type Tab = 'simulador' | 'incoterms' | 'checklist' | 'ncm'
+type Tab = 'simulador' | 'incoterms' | 'checklist'
 
 // ── DI Simulator ─────────────────────────────────────────────
 function SimuladorDI() {
@@ -109,7 +110,9 @@ function IncotermsComp() {
         <div style={{ display: 'grid', gap: 6 }}>
           {d.resp.map(r => (
             <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid rgba(21,101,192,0.1)' }}>
-              <span style={{ fontSize: 14, width: 24, textAlign: 'center' }}>{r.icon}</span>
+              <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-core)', flexShrink: 0 }}>
+                {INCO_ICONS[r.icon] ?? INCO_ICONS.doc}
+              </span>
               <span style={{ fontSize: 13, color: 'var(--text-2)', flex: 1 }}>{r.name}</span>
               <span style={{
                 fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
@@ -151,7 +154,17 @@ function Checklist() {
             color: type === t ? 'var(--brand-core)' : 'var(--text-3)',
             fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
-            {t === 'imp' ? '📦 Importação' : '✈️ Exportação'}
+            {t === 'imp' ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="m16 2-4 4-4-4"/><path d="M8 10h8"/><path d="M8 14h4"/><path d="M19 17v5"/><path d="M17 19h4"/></svg>
+                Importação
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="m16 2-4 4-4-4"/><path d="M8 10h8"/><path d="M8 14h4"/><path d="M22 22 17 17"/><path d="m17 22 5-5"/></svg>
+                Exportação
+              </span>
+            )}
           </button>
         ))}
         <button onClick={() => setChecked(new Set())} style={{ marginLeft: 'auto', padding: '8px 16px', border: '1.5px solid var(--border)', borderRadius: 100, background: 'transparent', fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', cursor: 'pointer' }}>
@@ -208,16 +221,44 @@ function Checklist() {
   )
 }
 
+const INCO_ICONS: Record<string, React.ReactNode> = {
+  box:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27,6.96 12,12.01 20.73,6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  truck:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+  doc:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  ship:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l.5 2A2 2 0 0 0 5.46 21h13.08a2 2 0 0 0 1.96-1.62l.5-2"/><path d="M12 2v8"/><path d="m5 11 1.5-7h11L19 11"/><path d="M3 17h18"/></svg>,
+  shield:  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  customs: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2" width="7" height="9"/><rect x="14" y="2" width="7" height="5"/><rect x="14" y="11" width="7" height="9"/><rect x="3" y="15" width="7" height="7"/></svg>,
+}
+
+
+const TAB_ICONS: Record<Tab, JSX.Element> = {
+  simulador: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
+    </svg>
+  ),
+  incoterms: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  ),
+  checklist: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+  ),
+}
+
 // ── Main Ferramentas Client ────────────────────────────────────
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'simulador',  label: 'Simulador de DI',      icon: '🧮' },
-  { id: 'incoterms', label: 'Comparador Incoterms',  icon: '📑' },
-  { id: 'checklist', label: 'Checklist Documental',  icon: '✅' },
-  { id: 'ncm',       label: 'Consulta NCM',          icon: '🔍' },
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'simulador',  label: 'Simulador de DI'     },
+  { id: 'incoterms', label: 'Comparador Incoterms' },
+  { id: 'checklist', label: 'Checklist Documental' },
 ]
 
 export function FerramentasClient() {
   const [tab, setTab] = useState<Tab>('simulador')
+  const router = useRouter()
 
   return (
     <section className="sec" style={{ background: 'var(--bg-alt)', minHeight: '80vh' }}>
@@ -226,20 +267,49 @@ export function FerramentasClient() {
         <h1 className="sec-h">Tudo que você precisa<br /><span>para operar com precisão</span></h1>
         <p className="sec-p">Ferramentas especializadas para importadores e exportadores brasileiros.</p>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 44, marginBottom: 32, background: 'var(--border)', padding: 4, borderRadius: 12, width: 'fit-content' }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: '9px 22px', borderRadius: 9, border: 'none',
-              background: tab === t.id ? 'var(--bg-card)' : 'transparent',
+        {/* Tabs + NCM link */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 44, marginBottom: 32, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, background: 'var(--border)', padding: 4, borderRadius: 12 }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding: '9px 22px', borderRadius: 9, border: 'none',
+                background: tab === t.id ? 'var(--bg-card)' : 'transparent',
+                fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: 600,
+                color: tab === t.id ? 'var(--text)' : 'var(--text-3)',
+                cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: tab === t.id ? 'var(--sh)' : 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+              }}>
+                {TAB_ICONS[t.id]} {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Divisor */}
+          <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
+
+          {/* NCM — link separado */}
+          <button
+            onClick={() => router.push('/ncm')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '9px 20px', borderRadius: 10,
+              border: '1.5px solid var(--brand-pale)',
+              background: 'var(--brand-frost)',
               fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: 600,
-              color: tab === t.id ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: tab === t.id ? 'var(--sh)' : 'none',
-            }}>
-              {t.icon} {t.label}
-            </button>
-          ))}
+              color: 'var(--brand-core)', cursor: 'pointer', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget; el.style.background = 'var(--brand-core)'; el.style.color = 'white'; el.style.borderColor = 'var(--brand-core)' }}
+            onMouseLeave={e => { const el = e.currentTarget; el.style.background = 'var(--brand-frost)'; el.style.color = 'var(--brand-core)'; el.style.borderColor = 'var(--brand-pale)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            Consulta NCM
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
         </div>
 
         {/* Panel */}
@@ -247,13 +317,6 @@ export function FerramentasClient() {
           {tab === 'simulador'  && <SimuladorDI />}
           {tab === 'incoterms' && <IncotermsComp />}
           {tab === 'checklist' && <Checklist />}
-          {tab === 'ncm' && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-3)' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Consulta NCM em breve</div>
-              <p style={{ fontSize: 14 }}>Integração com TEC/Siscomex em desenvolvimento.</p>
-            </div>
-          )}
         </div>
       </div>
     </section>

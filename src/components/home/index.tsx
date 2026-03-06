@@ -233,9 +233,9 @@ export function Services() {
                 el.style.transform = 'none'
               }}
             >
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--brand-frost)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 20, flexShrink: 0 }}>
-                {svc.icon}
-              </div>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--brand-frost)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, flexShrink: 0, color: 'var(--brand-core)' }}
+                dangerouslySetInnerHTML={{ __html: svc.icon }}
+              />
               <div style={{ fontSize: 'clamp(13px,1.3vw,16px)', fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{svc.name}</div>
               <p style={{ fontSize: 'clamp(12.5px,1.1vw,13.5px)', color: 'var(--text-3)', lineHeight: 1.7 }}>{svc.desc}</p>
             </div>
@@ -253,6 +253,18 @@ const NEWS_THEME: Record<string, string> = {
   blue:   'linear-gradient(135deg, var(--brand-frost), #C5D5F5)',
   green:  'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
   yellow: 'linear-gradient(135deg, #FFF8E1, #FFE0B2)',
+}
+
+const NEWS_ICONS: Record<string, React.ReactNode> = {
+  alert: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#1565C0' }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+  chart: <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#059669' }}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  doc:   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#B45309' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+}
+
+const NEWS_CAT_ICONS: Record<string, React.ReactNode> = {
+  alert: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>,
+  chart: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  doc:   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>,
 }
 
 export function NewsSection() {
@@ -275,12 +287,16 @@ export function NewsSection() {
                 padding: i === 0 ? 'clamp(24px,3.5vw,48px)' : 'clamp(18px,2.5vw,36px)',
                 background: NEWS_THEME[n.theme] ?? NEWS_THEME.blue,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: i === 0 ? 'clamp(36px,4.5vw,60px)' : 'clamp(28px,3.5vw,44px)',
+                minHeight: i === 0 ? 100 : 80,
               }}>
-                {n.icon}
+                <div style={{ transform: `scale(${i === 0 ? 1.6 : 1.2})` }}>
+                  {NEWS_ICONS[n.icon] ?? NEWS_ICONS.doc}
+                </div>
               </div>
               <div style={{ padding: 'clamp(14px,1.8vw,20px) clamp(14px,1.8vw,22px)', background: 'var(--bg-card)' }}>
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--brand-core)', marginBottom: 8, display: 'block' }}>{n.category}</span>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--brand-core)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {NEWS_CAT_ICONS[n.icon]}{n.category}
+                </span>
                 <div style={{ fontSize: i === 0 ? 'clamp(14px,1.5vw,18px)' : 'clamp(13px,1.3vw,15px)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.45, marginBottom: 8 }}>{n.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{n.date} · {n.readTime}</div>
               </div>
@@ -301,18 +317,66 @@ export function NewsSection() {
 // ═══════════════════════════════════════════════════
 // QuoteForm
 // ═══════════════════════════════════════════════════
-export function QuoteForm() {
-  const [tab, setTab] = useState<'imp' | 'exp'>('imp')
-  const [sent, setSent] = useState(false)
+const SvgImport = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+    <polyline points="3.27,6.96 12,12.01 20.73,6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+  </svg>
+)
+const SvgExport = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4s-2 1-3.5 2.5L11 8 2.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 7.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+  </svg>
+)
+const SvgSpin = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+    style={{ animation: 'spin 0.75s linear infinite', display: 'block' }}>
+    <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+  </svg>
+)
+const SvgOk = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6 9 17l-5-5"/>
+  </svg>
+)
 
-  function submit(e: React.FormEvent) {
+export function QuoteForm() {
+  const [tab,    setTab]    = useState<'imp' | 'exp'>('imp')
+  const [status, setStatus] = useState<'idle'|'sending'|'sent'|'error'>('idle')
+  const [errMsg, setErrMsg] = useState('')
+  const formRef = useRef<HTMLFormElement>(null)
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSent(true)
-    setTimeout(() => setSent(false), 5000)
+    if (status === 'sending') return
+    setStatus('sending')
+    const fd = new FormData(e.currentTarget)
+    try {
+      const res  = await fetch('/api/cotacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome:     fd.get('nome'),     empresa:  fd.get('empresa'),
+          email:    fd.get('email'),    telefone: fd.get('telefone'),
+          ncm:      fd.get('ncm'),      tipo:     tab,
+          mensagem: fd.get('mensagem'),
+        }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error ?? 'Erro ao enviar')
+      setStatus('sent')
+      formRef.current?.reset()
+      setTimeout(() => setStatus('idle'), 8000)
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Erro desconhecido')
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 6000)
+    }
   }
 
   return (
     <section className="sec" style={{ background: 'var(--bg-alt)' }} id="cotacao-form">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div className="wrap">
         <div className="quote-grid">
 
@@ -324,6 +388,7 @@ export function QuoteForm() {
               Solicitar Cotação
             </div>
 
+            {/* Tab selector — SVGs, sem emojis */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
               {(['imp', 'exp'] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)} style={{
@@ -332,32 +397,59 @@ export function QuoteForm() {
                   background: tab === t ? 'var(--brand-frost)' : 'var(--bg-card)',
                   color: tab === t ? 'var(--brand-core)' : 'var(--text-3)',
                   fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                 }}>
-                  {t === 'imp' ? '📦 Importação' : '✈️ Exportação'}
+                  {t === 'imp' ? <SvgImport /> : <SvgExport />}
+                  {t === 'imp' ? 'Importação' : 'Exportação'}
                 </button>
               ))}
             </div>
 
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <form ref={formRef} onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="form-row-2">
-                <div className="fg"><label>Nome</label><input type="text" placeholder="Seu nome" required /></div>
-                <div className="fg"><label>Empresa</label><input type="text" placeholder="Empresa" required /></div>
+                <div className="fg"><label>Nome</label><input name="nome" type="text" placeholder="Seu nome" required /></div>
+                <div className="fg"><label>Empresa</label><input name="empresa" type="text" placeholder="Empresa" required /></div>
               </div>
               <div className="form-row-2">
-                <div className="fg"><label>E-mail</label><input type="email" placeholder="email@empresa.com" required /></div>
-                <div className="fg"><label>Telefone</label><input type="tel" placeholder="+55 (13) 9..." /></div>
+                <div className="fg"><label>E-mail</label><input name="email" type="email" placeholder="email@empresa.com" required /></div>
+                <div className="fg"><label>Telefone</label><input name="telefone" type="tel" placeholder="+55 (13) 9..." /></div>
               </div>
               <div className="fg">
                 <label>NCM / Produto</label>
-                <input type="text" placeholder="ex: 8471.30.19 — Notebook" />
+                <input name="ncm" type="text" placeholder="ex: 8471.30.19 — Notebook" />
               </div>
               <div className="fg">
                 <label>Mensagem</label>
-                <textarea placeholder="Descreva sua operação..." rows={3} />
+                <textarea name="mensagem" placeholder="Descreva sua operação..." rows={3} />
               </div>
-              <button type="submit" className="quote-submit-btn" style={{ padding: '13px 28px', borderRadius: 10, background: 'var(--brand-core)', border: 'none', fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: 700, color: 'white', cursor: 'pointer', boxShadow: '0 4px 16px rgba(21,101,192,0.35)', transition: 'all 0.2s' }}>
-                {sent ? '✓ Enviado com sucesso!' : 'Enviar Solicitação →'}
+
+              {/* Error */}
+              {status === 'error' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  <span style={{ fontSize: 12, color: '#EF4444', flex: 1 }}>{errMsg || 'Erro ao enviar. Tente novamente.'}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={status === 'sending' || status === 'sent'}
+                className="quote-submit-btn"
+                style={{
+                  padding: '13px 28px', borderRadius: 10,
+                  background: status === 'sent' ? '#059669' : status === 'error' ? '#DC2626' : 'var(--brand-core)',
+                  border: 'none', fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: 700,
+                  color: 'white', cursor: status === 'sending' ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 16px rgba(21,101,192,0.3)', transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                {status === 'sending' && <SvgSpin />}
+                {status === 'sent'    && <SvgOk />}
+                {status === 'idle'    && 'Enviar Solicitação'}
+                {status === 'sending' && 'Enviando…'}
+                {status === 'sent'    && 'Enviado com sucesso!'}
+                {status === 'error'   && 'Tentar novamente'}
               </button>
             </form>
           </div>
@@ -395,36 +487,7 @@ export function QuoteForm() {
 }
 
 // ═══════════════════════════════════════════════════
-// ClientLogos
+// ClientLogos — re-exported from dedicated component
 // ═══════════════════════════════════════════════════
-export function ClientLogos() {
-  const names = [
-    'Ambev','Vale','Braskem','Embraer','Natura',
-    'Gerdau','Suzano','Ultrapar','WEG','Marcopolo',
-    'Tupy','Randon','Iochpe','Fras-le','Schulz',
-    'Metal Leve','Mahle','Dana','Eaton','Parker',
-  ]
-
-  return (
-    <section className="sec" style={{ background: 'var(--bg-alt)', borderTop: '1px solid var(--border)' }}>
-      <div className="wrap">
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div className="sec-eye" style={{ justifyContent: 'center' }}>Nossos Clientes</div>
-          <h2 className="sec-h" style={{ textAlign: 'center' }}>Empresas que confiam na <span>INDAIA</span></h2>
-        </div>
-        <div className="logos-grid">
-          {names.map(name => (
-            <div
-              key={name}
-              className="logo-item"
-              onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--brand-pale)'; el.style.color = 'var(--brand-core)' }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text-3)' }}
-            >
-              {name}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+// (implemented in ClientLogos.tsx as infinite carousel)
+export { ClientLogos } from '@/components/home/ClientLogos'

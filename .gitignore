@@ -13,6 +13,7 @@ build/
 # Env
 .env
 .env*.local
+RESEND_API_KEY=re_Rm85zYa3_7TVkgPTCctgMZN4njUoWigL4
 
 # Misc
 .DS_Store

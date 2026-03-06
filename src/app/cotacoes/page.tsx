@@ -1,5 +1,6 @@
 import { LiveRates } from '@/components/cotacao/LiveRates'
 import { PtaxTable } from '@/components/cotacao/PtaxTable'
+import { PortsMonitor } from '@/components/cotacao/PortsMonitor'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function CotacoesPage() {
       <div style={{ paddingTop: 0 }}>
         <LiveRates />
         <PtaxTable />
+        <PortsMonitor />
       </div>
     </>
   )

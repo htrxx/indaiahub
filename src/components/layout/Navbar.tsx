@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import styles from './Navbar.module.css'
 
@@ -112,12 +112,12 @@ const NAV_ITEMS = [
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         ),
-        label: 'Consulta NCM', sub: 'Alíquotas e tributação', href: '/ferramentas#ncm',
+        label: 'Consulta NCM', sub: 'Alíquotas e tributação', href: '/ncm',
       },
     ],
   },
   {
-    label: 'Cotações',
+    label: 'Câmbio & Operações',
     href: '/cotacoes',
     items: [
       {
@@ -143,7 +143,7 @@ const NAV_ITEMS = [
             <path d="M12 13a2 2 0 100-4 2 2 0 000 4z"/>
           </svg>
         ),
-        label: 'Status dos Portos', sub: 'Condições meteorológicas', href: '/cotacoes#portos',
+        label: 'Status dos Portos', sub: 'Condições meteorológicas', href: '/portos',
       },
     ],
   },
@@ -155,8 +155,18 @@ const NAV_ITEMS = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const toggleMobile = useCallback(() => setMobileOpen(p => !p), [])
+
+  function handleEnter(label: string) {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    setActiveMenu(label)
+  }
+
+  function handleLeave() {
+    leaveTimer.current = setTimeout(() => setActiveMenu(null), 180)
+  }
 
   return (
     <nav className={styles.nav}>
@@ -177,8 +187,8 @@ export function Navbar() {
           <li
             key={item.label}
             className={styles.navItem}
-            onMouseEnter={() => setActiveMenu(item.label)}
-            onMouseLeave={() => setActiveMenu(null)}
+            onMouseEnter={() => handleEnter(item.label)}
+            onMouseLeave={handleLeave}
           >
             {item.items || item.cols ? (
               <>
@@ -233,8 +243,8 @@ export function Navbar() {
         {/* Área do Cliente */}
         <div
           className={styles.navItem}
-          onMouseEnter={() => setActiveMenu('cliente')}
-          onMouseLeave={() => setActiveMenu(null)}
+          onMouseEnter={() => handleEnter('cliente')}
+          onMouseLeave={handleLeave}
           style={{ position: 'relative' }}
         >
           <button className={styles.btnGhost}>

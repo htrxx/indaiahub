@@ -145,20 +145,21 @@ export function NewsSection() {
       <script async src="https://www.instagram.com/embed.js" />
 
       <style>{`
-        /* Traço branco no eyebrow dentro da caixa azul */
-        .ig-sec-eye {
-          color: white !important;
-        }
-        .ig-sec-eye::before {
-          background: white !important;
-        }
-
-        /* Caixa azul escura ao redor do carrossel */
+        /* Caixa ao redor do carrossel — fundo branco limpo */
         .ig-carousel-box {
-          background: var(--brand-navy);
+          background: #ffffff;
+          border: 1px solid #E2E8F0;
           border-radius: 24px;
           padding: 32px 100px;
           position: relative;
+        }
+
+        /* Eyebrow dentro da caixa branca usa cor padrão */
+        .ig-sec-eye {
+          color: var(--brand-core) !important;
+        }
+        .ig-sec-eye::before {
+          background: var(--brand-core) !important;
         }
 
         .ig-carousel {
@@ -215,18 +216,20 @@ export function NewsSection() {
           transform: translateY(-50%);
           width: 52px; height: 52px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.1);
-          border: 1.5px solid rgba(255,255,255,0.2);
+          background: #ffffff;
+          border: 1.5px solid var(--border);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer;
-          color: white;
+          color: var(--text-2);
           transition: all 0.2s;
           z-index: 3;
+          box-shadow: 0 2px 8px rgba(15,23,42,0.08);
         }
         .ig-carousel__btn:hover:not(.ig-carousel__btn--disabled) {
           background: var(--brand-core);
           border-color: var(--brand-core);
-          box-shadow: 0 6px 20px rgba(21,101,192,0.5);
+          color: white;
+          box-shadow: 0 6px 20px rgba(21,101,192,0.35);
         }
         .ig-carousel__btn--left  { left: -68px; }
         .ig-carousel__btn--right { right: -68px; }
@@ -266,9 +269,9 @@ export function NewsSection() {
                 </svg>
                 @indaialogistica
               </div>
-              <h2 className="sec-h" style={{ color: '#FFFFFF' }}>
+              <h2 className="sec-h" style={{ color: 'var(--text)' }}>
                 Acompanhe a INDAIA<br />
-                <span style={{ color: 'var(--brand-sky)' }}>no Instagram</span>
+                <span style={{ color: 'var(--brand-core)' }}>no Instagram</span>
               </h2>
             </div>
 
@@ -279,21 +282,21 @@ export function NewsSection() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '10px 22px', borderRadius: 10,
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)',
+                border: '1.5px solid var(--border)',
+                fontSize: 13, fontWeight: 700, color: 'var(--text-2)',
                 textDecoration: 'none', transition: 'all 0.2s',
                 whiteSpace: 'nowrap', background: 'transparent', cursor: 'pointer',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLAnchorElement
                 el.style.borderColor = '#C13584'
-                el.style.color = 'white'
-                el.style.background = 'rgba(193,53,132,0.15)'
+                el.style.color = '#C13584'
+                el.style.background = 'rgba(193,53,132,0.06)'
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLAnchorElement
-                el.style.borderColor = 'rgba(255,255,255,0.25)'
-                el.style.color = 'rgba(255,255,255,0.8)'
+                el.style.borderColor = 'var(--border)'
+                el.style.color = 'var(--text-2)'
                 el.style.background = 'transparent'
               }}
             >
